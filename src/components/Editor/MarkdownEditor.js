@@ -215,30 +215,7 @@ const MarkdownEditor = () => {
               </div>
               
 
-              <div className="mb-4 grid grid-cols-2 gap-4">
-                <div>
-                  <div className="flex items-center space-x-2 mb-4">
-                    <button
-                      onClick={() => setShowGlobalTags(!showGlobalTags)}
-                      >
-                      <FontAwesomeIcon icon={faProjectDiagram} color="blue" />
-                    </button>
-                    <span className="font-medium">所属分类: </span>
-                  </div>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">请选择分类</option>
-                    {categories.map((cat) => (
-                      <option key={cat.label} value={cat.label+"+"+cat.id}>
-                        { cat.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
+              <div className="mb-4">
                 <div>
                   <div className="flex items-center space-x-2 mb-2">
                     <FontAwesomeIcon icon={faTags} className="text-gray-500" />
