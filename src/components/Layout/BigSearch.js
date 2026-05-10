@@ -74,13 +74,13 @@ const BigSearch = () => {
                 onClick={()=>{navigate('/editor');}} variant="ghost"
                 className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
              >
-               <FontAwesomeIcon icon={faSignInAlt} className="mr-2" /> 编辑
+               <FontAwesomeIcon icon={faSignInAlt} className="mr-2" /> 问答
              </Button>
              <Button
                variant="ghost"
                className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
              >
-               <FontAwesomeIcon icon={faUserPlus} className="mr-2" /> 加入
+               <FontAwesomeIcon icon={faUserPlus} className="mr-2" /> 标准化
              </Button>
             <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
               {/* <Upload className="w-4 h-4 mr-2" />  检索 */}
