@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import InterestRateTooltip from './InterestRateTooltip';
 import Button from '../ui/Button';
 import {  useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -21,6 +22,7 @@ const BigSearch = () => {
 
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [showRateTooltip, setShowRateTooltip] = useState(false);
 
   const handleSearch = () => {
     setSearchQuery(searchInput);
@@ -63,15 +65,26 @@ const BigSearch = () => {
             >
               <FontAwesomeIcon icon={faHome} className="mr-2" />首页
             </Button>
-            <Button
-              onClick={()=>{navigate('/articles');}} variant="ghost"
-              className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
-            >
-              <FontAwesomeIcon icon={faNewspaper} className="mr-2" /> 探索
-            </Button>
+            <div className="relative">
+              <Button
+                // onClick={()=>{navigate('/articles');}} 
+                variant="ghost"
+                className={`hover:bg-white/20 ${showRateTooltip ? (isScrolled ? 'bg-gray-100' : 'bg-white/20') : ''} ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
+                onClick={() => setShowRateTooltip(!showRateTooltip)}
+              >
+                <FontAwesomeIcon icon={faNewspaper} className="mr-2" /> 探索
+              </Button>
+              {showRateTooltip && (
+                <>
+                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowRateTooltip(false)}></div>
+                  <InterestRateTooltip />
+                </>
+              )}
+            </div>
 
              <Button
-                onClick={()=>{navigate('/editor');}} variant="ghost"
+                // onClick={()=>{navigate('/editor');}} 
+                variant="ghost"
                 className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
              >
                <FontAwesomeIcon icon={faSignInAlt} className="mr-2" /> 问答
