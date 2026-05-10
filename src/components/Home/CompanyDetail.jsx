@@ -1,6 +1,7 @@
 import React from 'react';
 import { mockCompanies } from '../data/mockCompanies';
 import ALLArticles from '../Articles/ALLArticles';
+import MarkdownEditor from '../Editor/MarkdownEditor';
 
 /**
  * 公司详情组件（支持作为覆盖层显示）
@@ -8,7 +9,7 @@ import ALLArticles from '../Articles/ALLArticles';
  * @param {number} props.companyId - 公司ID
  * @param {function} props.onClose - 关闭回调
  */
-function CompanyDetail({ company: propCompany, companyId, onClose, onEdit }) {
+function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEditing = false, onBackFromEdit }) {
   const company = propCompany || mockCompanies.find(c => c.id === Number(companyId));
 
   if (!company) {
@@ -62,15 +63,27 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit }) {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6">
-      <button
-        onClick={onClose}
-        className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 sm:mb-6 transition-colors group"
-      >
-        <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        返回列表
-      </button>
+      {isEditing ? (
+        <button
+          onClick={onBackFromEdit}
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 sm:mb-6 transition-colors group"
+        >
+          <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          完成编辑
+        </button>
+      ) : (
+        <button
+          onClick={onClose}
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4 sm:mb-6 transition-colors group"
+        >
+          <svg className="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          返回列表
+        </button>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* 左侧：公司详情（约 35% 空间） */}
@@ -166,17 +179,21 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit }) {
           </div>
         </div>
 
-        {/* 右侧：相关文章（约 65% 空间） */}
+                {/* 右侧：相关文章 / Markdown编辑器（约 65% 空间） */}
         <div className="lg:w-[65%] xl:w-[68%]">
-          <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 lg:p-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5 sm:mb-6 flex items-center gap-2">
-              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-              </svg>
-              相关文章
-            </h2>
-            <ALLArticles />
-          </div>
+          {isEditing ? (
+            <MarkdownEditor />
+          ) : (
+            <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 lg:p-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5 sm:mb-6 flex items-center gap-2">
+                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+                相关文章
+              </h2>
+              <ALLArticles />
+            </div>
+          )}
         </div>
       </div>
     </div>
