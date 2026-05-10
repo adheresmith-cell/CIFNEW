@@ -14,16 +14,17 @@ import DestinationSection from './components/Home/DestinationSection';
 import CompanySection from './components/Home/CompanySection';
 import CompanyList from './components/Home/CompanyList';
 import CompanyDetail from './components/Home/CompanyDetail';
-import { mockCompanies } from './components/data/mockCompanies';
+import { mockCompanies as initialCompanies } from './components/data/mockCompanies';
 
 
 import CytoscapeTree from './components/Editor/CytoscapeTree';
 
 // 内部组件，确保 useNavigate 在 Router 内部使用
 const AppRoutes = () => {
+  const [companies, setCompanies] = useState(initialCompanies);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const { searchQuery, industry, city } = useSearch();
-  const filteredCompanies = mockCompanies.filter(company => {
+  const filteredCompanies = companies.filter(company => {
     const query = searchQuery.toLowerCase().trim();
 
     // 关键词过滤
@@ -108,6 +109,7 @@ const AppRoutes = () => {
                     <CompanyList
                       companies={filteredCompanies}
                       onCompanyClick={handleCompanyClick}
+                      onAddCompany={(newCompany) => setCompanies(prev => [...prev, newCompany])}
                     />
                     {/* <ALLArticles /> */}
                   </>

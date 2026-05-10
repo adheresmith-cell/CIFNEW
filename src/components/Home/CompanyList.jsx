@@ -1,11 +1,21 @@
+import { useState } from 'react';
 import CompanyCard from './CompanyCard';
+import AddCompanyModal from './AddCompanyModal';
 
 /**
  * 公司列表组件
  * @param {array} companies - 公司数据列表
  * @param {function} onCompanyClick - 公司点击回调
+ * @param {function} onAddCompany - 新增公司回调
  */
-function CompanyList({ companies, onCompanyClick }) {
+function CompanyList({ companies, onCompanyClick, onAddCompany }) {
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const handleAddCompany = (newCompany) => {
+    onAddCompany(newCompany);
+    setShowAddModal(false);
+  };
+
   if (companies.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-12 text-center">
@@ -24,6 +34,22 @@ function CompanyList({ companies, onCompanyClick }) {
         </svg>
         <h3 className="text-lg font-medium text-gray-900 mb-2">暂无匹配公司</h3>
         <p className="text-gray-500">试试调整搜索条件或筛选条件</p>
+
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          新增公司节点
+        </button>
+
+        <AddCompanyModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAddCompany}
+        />
       </div>
     );
   }
@@ -34,6 +60,15 @@ function CompanyList({ companies, onCompanyClick }) {
         <p className="text-sm text-gray-600">
           共找到 <span className="font-semibold text-primary-600">{companies.length}</span> 家公司
         </p>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          新增公司节点
+        </button>
       </div>
       {companies.map((company) => (
         <CompanyCard
@@ -42,6 +77,12 @@ function CompanyList({ companies, onCompanyClick }) {
           onClick={onCompanyClick}
         />
       ))}
+
+      <AddCompanyModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddCompany}
+      />
     </div>
   );
 }
