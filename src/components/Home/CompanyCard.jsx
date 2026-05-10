@@ -86,7 +86,7 @@ function CompanyCard({ company, onClick }) {
             {company.description}
           </p>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-gray-500">
               在招岗位
               <span className="ml-1 text-primary-600 font-semibold">{company.jobs}</span>
@@ -95,6 +95,26 @@ function CompanyCard({ company, onClick }) {
             <button className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors">
               查看详情 →
             </button>
+          </div>
+
+          {/* 关联组织标签 */}
+          <div className="flex flex-wrap gap-1.5">
+            {company.parent && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-200" title={`隶属于 ${company.parent}`}>
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                {company.parent}
+              </span>
+            )}
+            {company.related && company.related.map((rel, idx) => (
+              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200">
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                {rel}
+              </span>
+            ))}
           </div>
         </div>
       </div>
