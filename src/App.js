@@ -11,7 +11,6 @@ import HomePage from './components/Home/HomePage';
 import FlightSearchBar from './components/Home/FlightSearchBar';
 import CompanySearchBar from './components/Home/CompanySearchBar';
 import DestinationSection from './components/Home/DestinationSection';
-import CompanySection from './components/Home/CompanySection';
 import CompanyList from './components/Home/CompanyList';
 import CompanyDetail from './components/Home/CompanyDetail';
 import { mockCompanies as initialCompanies } from './components/data/mockCompanies';
