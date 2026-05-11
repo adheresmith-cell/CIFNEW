@@ -5,9 +5,8 @@
 
 转换规则：
 1. 将按省份分组的对象拍平为一个公司数组
-2. 只保留与 mockCompanies 匹配的字段：
-   id, name, logo, industry, scale, city, description, jobs, rating, founded, website
-3. 丢弃 stockCode, englishName, tags 字段
+2. 保留字段：id, name, logo, industry, scale, city, description, jobs, rating, founded, website, stockCode, englishName, tags
+3. 额外补全：parent, related
 
 输出：
 - src/components/data/transformed_companies.json (JSON 格式)
@@ -23,10 +22,11 @@ ALL_DATA_PATH = os.path.join(BASE_DIR, '..', '..', '..', 'public', 'allData.json
 # 输出到 data 目录
 OUTPUT_JSON_PATH = os.path.join(BASE_DIR, 'transformed_companies.json')
 
-# 目标字段（与 mockCompanies 一致）
+# 目标字段
 TARGET_FIELDS = [
     'id', 'name', 'logo', 'industry', 'scale', 'city',
     'description', 'jobs', 'rating', 'founded', 'website',
+    'stockCode', 'englishName', 'tags',
     'parent', 'related'
 ]
 
@@ -75,6 +75,16 @@ def transform():
                 entry['rating'] = float(entry['rating'])
             else:
                 entry['rating'] = 3.0
+
+            # 确保 tags 字段始终存在
+            if 'tags' not in entry:
+                entry['tags'] = ''
+
+            # 确保 stockCode 和 englishName 字段始终存在
+            if 'stockCode' not in entry:
+                entry['stockCode'] = ''
+            if 'englishName' not in entry:
+                entry['englishName'] = ''
 
             # 确保 parent 和 related 字段始终存在（即使为空）
             if 'parent' not in entry:
