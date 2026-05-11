@@ -13,7 +13,7 @@ import CompanySearchBar from './components/Home/CompanySearchBar';
 import DestinationSection from './components/Home/DestinationSection';
 import CompanyList from './components/Home/CompanyList';
 import CompanyDetail from './components/Home/CompanyDetail';
-import { mockCompanies as initialCompanies } from './components/data/mockCompanies';
+import { mockCompanies as initialCompanies } from './components/data/transformed_companies';
 
 
 import CytoscapeTree from './components/Editor/CytoscapeTree';

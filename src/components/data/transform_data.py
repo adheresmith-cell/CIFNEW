@@ -26,7 +26,8 @@ OUTPUT_JSON_PATH = os.path.join(BASE_DIR, 'transformed_companies.json')
 # 目标字段（与 mockCompanies 一致）
 TARGET_FIELDS = [
     'id', 'name', 'logo', 'industry', 'scale', 'city',
-    'description', 'jobs', 'rating', 'founded', 'website'
+    'description', 'jobs', 'rating', 'founded', 'website',
+    'parent', 'related'
 ]
 
 
@@ -74,6 +75,12 @@ def transform():
                 entry['rating'] = float(entry['rating'])
             else:
                 entry['rating'] = 3.0
+
+            # 确保 parent 和 related 字段始终存在（即使为空）
+            if 'parent' not in entry:
+                entry['parent'] = ''
+            if 'related' not in entry:
+                entry['related'] = []
 
             transformed.append(entry)
             id_counter += 1
