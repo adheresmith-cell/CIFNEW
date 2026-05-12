@@ -192,7 +192,7 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEdi
           </div>
         </div>
 
-                {/* 右侧：相关文章 / Markdown编辑器（约 65% 空间） */}
+        {/* 右侧：相关文章 / Markdown编辑器（约 65% 空间） */}
         <div className="lg:w-[65%] xl:w-[68%]">
           {isEditing ? (
             <MarkdownEditor />
