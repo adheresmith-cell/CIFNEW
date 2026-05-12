@@ -13,7 +13,7 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
     scale: '1-99 人',
     city: '',
     description: '',
-    jobs: '',
+    tags: '',
     rating: '',
     founded: '',
     website: '',
@@ -39,7 +39,7 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
       scale: formData.scale,
       city: formData.city.trim(),
       description: formData.description.trim(),
-      jobs: parseInt(formData.jobs) || 0,
+      tags: formData.tags.trim(),
       rating: parseFloat(formData.rating) || 3.0,
       founded: formData.founded.trim(),
       website: formData.website.trim(),
@@ -60,7 +60,7 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
       scale: '1-99 人',
       city: '',
       description: '',
-      jobs: '',
+      tags: '',
       rating: '',
       founded: '',
       website: '',
@@ -147,15 +147,14 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
               />
             </div>
 
-            {/* 在招岗位 */}
+            {/* 标签 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">在招岗位数</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">标签</label>
               <input
-                type="number"
-                value={formData.jobs}
-                onChange={e => handleChange('jobs', e.target.value)}
-                placeholder="0"
-                min="0"
+                type="text"
+                value={formData.tags}
+                onChange={e => handleChange('tags', e.target.value)}
+                placeholder="用逗号分隔，如：新能源汽车、人工智能"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
             </div>
