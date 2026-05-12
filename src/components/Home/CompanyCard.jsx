@@ -86,16 +86,16 @@ function CompanyCard({ company, onClick }) {
             {company.description}
           </p>
 
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-gray-500">
-              在招岗位
-              <span className="ml-1 text-primary-600 font-semibold">{company.jobs}</span>
-              个
-            </span>
-            <button className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors">
-              查看详情 →
-            </button>
-          </div>
+          {/* Tags */}
+          {company.tags && (
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {company.tags.split(',').map((tag, idx) => (
+                <span key={idx} className="px-2 py-0.5 bg-orange-50 text-orange-700 text-xs font-medium rounded-full border border-orange-200">
+                  {tag.trim()}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* 关联组织标签 */}
           <div className="flex flex-wrap gap-1.5">
