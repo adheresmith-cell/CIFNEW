@@ -154,7 +154,7 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
                 type="text"
                 value={formData.tags}
                 onChange={e => handleChange('tags', e.target.value)}
-                placeholder="用逗号分隔，如：新能源汽车、人工智能"
+                placeholder="用逗号分隔，如：新能源汽车, 人工智能"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
             </div>
@@ -217,7 +217,7 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
                 type="text"
                 value={formData.related}
                 onChange={e => handleChange('related', e.target.value)}
-                placeholder="用逗号分隔，如：蚂蚁集团、阿里云（选填）"
+                placeholder="用逗号分隔，如：蚂蚁集团, 阿里云（选填）"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
             </div>

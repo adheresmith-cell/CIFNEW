@@ -7,6 +7,7 @@
 1. 将按省份分组的对象拍平为一个公司数组
 2. 保留字段：id, name, logo, industry, scale, city, description, jobs, rating, founded, website, stockCode, englishName, tags
 3. 额外补全：parent, related
+4. related 字段自动计算：若两个公司的 tags 存在超过 3 个相同标签，则互相关联
 
 输出：
 - src/components/data/transformed_companies.json (JSON 格式)
@@ -14,6 +15,7 @@
 
 import json
 import os
+from collections import defaultdict
 
 # 路径配置
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -29,6 +31,60 @@ TARGET_FIELDS = [
     'stockCode', 'englishName', 'tags',
     'parent', 'related'
 ]
+
+
+def compute_related(transformed):
+    """
+    遍历每个项目的 tags 内容，如果和其他项目存在相同 tag 超过三个则加入到 'related' 字段。
+    仅保留共同标签最多的前 5 个关联公司名称。
+
+    Args:
+        transformed: 公司列表，每个元素是包含 'id', 'tags', 'name' 等字段的字典
+    """
+    # 构建 id -> entry 的快速查找表
+    entry_map = {entry['id']: entry for entry in transformed}
+
+    # 解析每个公司的 tags 为集合
+    company_tags = {}
+    for entry in transformed:
+        tags_str = entry.get('tags', '')
+        if tags_str:
+            tags = [tag.strip() for tag in tags_str.split(',') if tag.strip()]
+        else:
+            tags = []
+        company_tags[entry['id']] = set(tags)
+
+    # 用 dict 存储每个公司的关联候选（id -> 共同标签数）
+    related_candidates = defaultdict(dict)
+
+    # 比较每对公司
+    company_ids = list(company_tags.keys())
+    for i in range(len(company_ids)):
+        for j in range(i + 1, len(company_ids)):
+            id_i = company_ids[i]
+            id_j = company_ids[j]
+
+            # 计算共同标签数量
+            common_tags = company_tags[id_i] & company_tags[id_j]
+            common_count = len(common_tags)
+            if common_count > 3:  # 相同 tag 超过三个
+                related_candidates[id_i][id_j] = common_count
+                related_candidates[id_j][id_i] = common_count
+
+    # 取每个公司共同标签最多的前 5 个，存储公司名称
+    for entry in transformed:
+        eid = entry['id']
+        if eid in related_candidates:
+            # 按共同标签数降序排序，取前5个
+            sorted_related = sorted(
+                related_candidates[eid].items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:5]
+            # 将 id 转换为公司名称
+            entry['related'] = [entry_map[rid]['name'] for rid, _ in sorted_related]
+        else:
+            entry['related'] = []
 
 
 def transform():
@@ -95,6 +151,10 @@ def transform():
             transformed.append(entry)
             id_counter += 1
 
+    # 计算关联关系
+    print("   正在计算关联关系（基于标签重叠）...")
+    compute_related(transformed)
+
     # 写入 JSON 输出
     with open(OUTPUT_JSON_PATH, 'w', encoding='utf-8') as f:
         json.dump(transformed, f, ensure_ascii=False, indent=2)
@@ -105,6 +165,12 @@ def transform():
     print(f"   源公司数量（按省份分组）：{len(all_data)} 个省份/地区")
     print(f"   转换后公司数量：{len(transformed)} 条")
     print(f"   每条记录字段：{list(transformed[0].keys()) if transformed else 'N/A'}")
+
+    # 统计关联关系
+    related_count = sum(1 for entry in transformed if entry.get('related'))
+    total_relations = sum(len(entry.get('related', [])) for entry in transformed)
+    print(f"   有关联的公司数：{related_count} 条")
+    print(f"   总关联关系数：{total_relations} 条")
 
 
 if __name__ == '__main__':
