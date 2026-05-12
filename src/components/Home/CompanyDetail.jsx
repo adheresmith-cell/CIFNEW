@@ -141,10 +141,23 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEdi
                   <div className="text-base sm:text-lg font-semibold text-gray-900">{company.scale}</div>
                 </div>
                 <div className="bg-gray-50 rounded-xl p-3 sm:p-4 text-center hover:bg-gray-100 transition-colors">
-                  <div className="text-xs text-gray-500 mb-1">在招岗位</div>
-                  <div className="text-base sm:text-lg font-semibold text-primary-600">{company.jobs} 个</div>
+                  <div className="text-xs text-gray-500 mb-1">标签</div>
+                  <div className="text-base sm:text-lg font-semibold text-primary-600">
+                    {company.tags ? company.tags.split(',').length : 0} 个
+                  </div>
                 </div>
               </div>
+
+              {/* Tags */}
+              {company.tags && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {company.tags.split(',').map((tag, idx) => (
+                    <span key={idx} className="px-2.5 py-1 bg-orange-50 text-orange-700 text-xs font-medium rounded-full border border-orange-200">
+                      {tag.trim()}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {/* 分隔线 */}
               <div className="border-t border-gray-100 mb-6"></div>
