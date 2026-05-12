@@ -104,7 +104,7 @@ const ArticleDetailModal = ({ article, onClose }) => {
   );
 };
 
-const ALLArticles = ({ companyName }) => {
+const ALLArticles = ({ companyId }) => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState(null);
@@ -128,12 +128,13 @@ const ALLArticles = ({ companyName }) => {
     loadArticles();
   }, []);
 
-  // 过滤文章：根据搜索关键词和公司名称过滤
+  // 过滤文章：根据搜索关键词和公司 ID 过滤
   const filteredArticles = articles.filter(article => {
     // 按搜索关键词过滤
     const matchesSearch = searchQuery === '' || (article.content && article.content.toLowerCase().includes(searchQuery.toLowerCase()));
-    // 按公司名称过滤（如果传入companyName）
-    const matchesCompany = !companyName || (article.category && article.category.toLowerCase().includes(companyName.toLowerCase()));
+    // 按公司 ID 精确过滤（如果传入companyId）
+    const matchesCompany = !companyId || (article.companyId === companyId);
+    console.log("ALLArticles filteredArticles",companyId);
     return matchesSearch && matchesCompany;
   });
 

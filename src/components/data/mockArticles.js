@@ -4,6 +4,7 @@ export const MOCK_ARTICLES = [
   {
     id: "100000001",
     title: "React 入门指南",
+    companyId: 1,
     content: `# React 入门指南
 
 ## 什么是 React？
@@ -35,6 +36,7 @@ function App() {
   {
     id: "100000002",
     title: "Node.js 后端开发实践",
+    companyId: 2,
     content: `# Node.js 后端开发实践
 
 ## 为什么选择 Node.js？
@@ -69,6 +71,7 @@ app.listen(3000);
   {
     id: "100000003",
     title: "数据库设计原则",
+    companyId: 9,
     content: `# 数据库设计原则
 
 良好的数据库设计是应用性能和数据一致性的基础。
@@ -98,6 +101,7 @@ app.listen(3000);
   {
     id: "100000004",
     title: "深入理解 JavaScript 闭包",
+    companyId: 3,
     content: `# 深入理解 JavaScript 闭包
 
 闭包是 JavaScript 中最重要也最容易让人困惑的概念之一。
@@ -135,6 +139,7 @@ console.log(counter()); // 2
   {
     id: "100000005",
     title: "Docker 容器化部署",
+    companyId: 4,
     content: `# Docker 容器化部署
 
 Docker 改变了软件开发和部署的方式。
@@ -173,6 +178,7 @@ CMD ["npm", "start"]
   {
     id: "100000006",
     title: "产品需求文档模板",
+    companyId: 5,
     content: `# 产品需求文档模板
 
 ## 1. 项目背景
@@ -210,6 +216,7 @@ CMD ["npm", "start"]
   {
     id: "100000007",
     title: "UI/UX 设计规范",
+    companyId: 6,
     content: `# UI/UX 设计规范
 
 ## 设计原则
@@ -241,6 +248,7 @@ CMD ["npm", "start"]
   {
     id: "100000008",
     title: "Git 工作流最佳实践",
+    companyId: 7,
     content: `# Git 工作流最佳实践
 
 ## 分支策略
@@ -277,6 +285,7 @@ chore: 构建/工具
   {
     id: "100000009",
     title: "机器学习入门",
+    companyId: 7,
     content: `# 机器学习入门
 
 ## 什么是机器学习？
@@ -316,6 +325,7 @@ chore: 构建/工具
   {
     id: "100000010",
     title: "微服务架构设计",
+    companyId: 8,
     content: `# 微服务架构设计
 
 ## 什么是微服务？

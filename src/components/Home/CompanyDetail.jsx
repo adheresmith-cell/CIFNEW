@@ -204,7 +204,7 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEdi
                 </svg>
                 相关文章
               </h2>
-              <ALLArticles />
+              <ALLArticles companyId={company.id} />
             </div>
           )}
         </div>

@@ -13,7 +13,7 @@ function CompanyCard({ company, onClick }) {
         {/* Logo */}
         <div className="flex-shrink-0">
           <img
-            src={company.logo}
+            src={null}  // company.logo
             alt={company.name}
             className="w-20 h-20 rounded-lg object-cover border border-gray-200 group-hover:border-primary-300 transition-colors"
           />
