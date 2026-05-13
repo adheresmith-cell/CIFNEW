@@ -195,7 +195,7 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEdi
         {/* 右侧：相关文章 / Markdown编辑器（约 65% 空间） */}
         <div className="lg:w-[65%] xl:w-[68%]">
           {isEditing ? (
-            <MarkdownEditor />
+            <MarkdownEditor company={company} />
           ) : (
             <div className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 lg:p-8">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-5 sm:mb-6 flex items-center gap-2">

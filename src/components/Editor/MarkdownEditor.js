@@ -11,6 +11,7 @@ import {
   faLock,
   faTags,
   faProjectDiagram,
+  faBuilding,
 } from '@fortawesome/free-solid-svg-icons';
 import gunService from '../../services/gunDB';
 import ipfsService from '../../services/ipfsDB';
@@ -18,7 +19,7 @@ import CytoscapeTree from './CytoscapeTree';
 import { useIndexedDB } from "../../services/useIndexedDB";
 import { v4 as uuidv4 } from 'uuid';
 
-const MarkdownEditor = () => {
+const MarkdownEditor = ({ company }) => {
   let db = useIndexedDB(); 
 
   const [content, setContent] = useState('');
@@ -117,6 +118,7 @@ const MarkdownEditor = () => {
     }
 
     console.log('========== 保存文章信息 ==========');
+    console.log(company);
     console.log('文章ID:', currentDocId);
     console.log('标题:', title);
     console.log('内容:', content);
@@ -128,7 +130,9 @@ const MarkdownEditor = () => {
     try {
       // await gunService.saveMarkdown(currentDocId, content, isPublic, tags, category, title); 
       // let cid = await ipfsService.saveMarkdown(currentDocId, content, isPublic, tags, category, title); 
+      let cid = "**************************";
       // console.log("article key in ipfs:",cid);// TODO 显示保存后的提示信息
+      showMessage('success', "article key in ipfs:"+ cid);
       // await gunService.saveCIDToIPFS(currentDocId, cid); 
       showMessage('success', isPublic ? '文档已保存并发布' : '文档已保存');
       loadDocuments(); // 刷新文档列表
@@ -209,7 +213,6 @@ const MarkdownEditor = () => {
                   </button>
                 </div>
               </div>
-              
 
               <div className="mb-4">
                 <div>
@@ -269,4 +272,4 @@ const MarkdownEditor = () => {
   );
 };
 
-export default MarkdownEditor; 
+export default MarkdownEditor;

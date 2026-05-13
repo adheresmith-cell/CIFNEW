@@ -109,7 +109,7 @@ const AppRoutes = () => {
           <Route
             path="/editor"
             element={
-              <MarkdownEditor />
+              <MarkdownEditor company={null} />
             }
           />
 
