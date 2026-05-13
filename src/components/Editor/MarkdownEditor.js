@@ -57,22 +57,8 @@ const MarkdownEditor = () => {
 
    // 获取所有文档
    const loadDocuments = async () => {
-     try {
-       const docs = await gunService.getAllArticles();
-       console.log('error', '获取所有文档',docs);
-       if (docs) {
-         const docList = docs
-           .filter(doc => doc && doc.id)
-           .map(doc => ({
-             id: doc.id,
-             ...doc
-           }));
-           console.log('loadDocuments函数', '加载文档得到列表',docList);
-         setDocuments(docList);
-       }
-     } catch (err) {
-       showMessage('error', '加载文档列表失败');
-     }
+        //showMessage('error', '加载文档列表失败');
+        showMessage('success', 'test');
    };
 
   // 显示消息
@@ -93,24 +79,24 @@ const MarkdownEditor = () => {
     setCategory({}); 
   };
 
-  const loadDocument = async (id) => {
-    try {
-      const doc = await gunService.getMarkdown(id);
-      if (doc) {
-        setContent(doc.content);
-        setTitle(doc.title || ''); 
-        setCurrentDocId(id);
-        setIsPublic(doc.isPublic || false);
-        const tagArray = doc.tagObject ? doc.tagObject.split('+') : [];
-        setTags(tagArray);
-        setCategory(doc.category || ''); 
-      }
-    } catch (err) {
-      showMessage('error', '加载文档失败');
-    }
-  };
+  // const loadDocument = async (id) => {
+  //   try {
+  //     const doc = await gunService.getMarkdown(id);
+  //     if (doc) {
+  //       setContent(doc.content);
+  //       setTitle(doc.title || ''); 
+  //       setCurrentDocId(id);
+  //       setIsPublic(doc.isPublic || false);
+  //       const tagArray = doc.tagObject ? doc.tagObject.split('+') : [];
+  //       setTags(tagArray);
+  //       setCategory(doc.category || ''); 
+  //     }
+  //   } catch (err) {
+  //     showMessage('error', '加载文档失败');
+  //   }
+  // };
 
-
+  // 处理标签显示
   const handleTagSubmit = (e) => {
     e.preventDefault();
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -126,14 +112,24 @@ const MarkdownEditor = () => {
   const saveDocument = async () => {
     if (!currentDocId) {
       showMessage('error', '请先创建新文档');
-      return;
+      // return;
+      createNewDocument();
     }
 
+    console.log('========== 保存文章信息 ==========');
+    console.log('文章ID:', currentDocId);
+    console.log('标题:', title);
+    console.log('内容:', content);
+    console.log('标签:', tags);
+    console.log('分类:', category);
+    console.log('可见性:', isPublic ? '公开' : '私有');
+    console.log('====================================');
+
     try {
-      await gunService.saveMarkdown(currentDocId, content, isPublic, tags, category, title); 
-      let cid = await ipfsService.saveMarkdown(currentDocId, content, isPublic, tags, category, title); 
-      console.log("article key in ipfs:",cid);// TODO 显示保存后的提示信息
-      await gunService.saveCIDToIPFS(currentDocId, cid); 
+      // await gunService.saveMarkdown(currentDocId, content, isPublic, tags, category, title); 
+      // let cid = await ipfsService.saveMarkdown(currentDocId, content, isPublic, tags, category, title); 
+      // console.log("article key in ipfs:",cid);// TODO 显示保存后的提示信息
+      // await gunService.saveCIDToIPFS(currentDocId, cid); 
       showMessage('success', isPublic ? '文档已保存并发布' : '文档已保存');
       loadDocuments(); // 刷新文档列表
     } catch (err) {
