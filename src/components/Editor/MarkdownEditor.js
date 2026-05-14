@@ -13,8 +13,7 @@ import {
   faProjectDiagram,
   faBuilding,
 } from '@fortawesome/free-solid-svg-icons';
-import gunService from '../../services/gunDB';
-import ipfsService from '../../services/ipfsDB';
+import documentService from '../../services/documentService';
 import CytoscapeTree from './CytoscapeTree';
 import { useIndexedDB } from "../../services/useIndexedDB";
 import { v4 as uuidv4 } from 'uuid';
@@ -32,7 +31,12 @@ const MarkdownEditor = ({ company }) => {
   const [tagInput, setTagInput] = useState(''); 
   const [showGlobalTags, setShowGlobalTags] = useState(false);
   const [category, setCategory] = useState({}); 
-  const [categories, setCategories] = useState([{label:'技术笔记',id:"1"},{label:'学习总结',id:"2"},{label:'项目文档',id:"2"}]); // 预设的分类列表
+  const [categories, setCategories] = useState([
+    { label: '技术笔记', id: '1' },
+    { label: '学习总结', id: '2' },
+    { label: '项目文档', id: '2' },
+  ]);
+  const [isSaving, setIsSaving] = useState(false);
   
   useEffect(() => {
     loadDocuments();
@@ -56,11 +60,17 @@ const MarkdownEditor = ({ company }) => {
     performDBOperations();
   }, [db]);
 
-   // 获取所有文档
-   const loadDocuments = async () => {
-        //showMessage('error', '加载文档列表失败');
-        showMessage('success', 'test');
-   };
+  // 获取所有文档
+  const loadDocuments = async () => {
+    try {
+      const docs = await documentService.getAllDocuments();
+      setDocuments(docs);
+      console.log('已加载文档列表:', docs.length, '条记录');
+    } catch (err) {
+      console.error('加载文档列表失败:', err);
+      showMessage('error', '加载文档列表失败');
+    }
+  };
 
   // 显示消息
   const showMessage = (type, content) => {
@@ -80,23 +90,6 @@ const MarkdownEditor = ({ company }) => {
     setCategory({}); 
   };
 
-  // const loadDocument = async (id) => {
-  //   try {
-  //     const doc = await gunService.getMarkdown(id);
-  //     if (doc) {
-  //       setContent(doc.content);
-  //       setTitle(doc.title || ''); 
-  //       setCurrentDocId(id);
-  //       setIsPublic(doc.isPublic || false);
-  //       const tagArray = doc.tagObject ? doc.tagObject.split('+') : [];
-  //       setTags(tagArray);
-  //       setCategory(doc.category || ''); 
-  //     }
-  //   } catch (err) {
-  //     showMessage('error', '加载文档失败');
-  //   }
-  // };
-
   // 处理标签显示
   const handleTagSubmit = (e) => {
     e.preventDefault();
@@ -111,48 +104,72 @@ const MarkdownEditor = ({ company }) => {
   };
 
   const saveDocument = async () => {
-    if (!currentDocId) {
-      showMessage('error', '请先创建新文档');
-      // return;
-      createNewDocument();
-    }
+    // // 若无当前文档 ID，自动创建新文档
+    // if (!currentDocId) {
+    //   createNewDocument();
+    //   // 创建后需要等待 state 更新，这里不能继续执行
+    //   // 用户需再次点击保存
+    //   showMessage('error', '已创建新文档，请再次点击保存');
+    //   return;
+    // }
 
-    console.log('========== 保存文章信息 ==========');
-    console.log(company);
-    console.log('文章ID:', currentDocId);
+    // if (isSaving) return; // 防止重复提交
+    // setIsSaving(true);
+
+    console.log('========== 保存文档 ==========');
+    console.log('关联企业:', company);
+    console.log('文档 ID:', currentDocId);
     console.log('标题:', title);
-    console.log('内容:', content);
+    console.log('内容长度:', content?.length || 0, '字符');
     console.log('标签:', tags);
     console.log('分类:', category);
     console.log('可见性:', isPublic ? '公开' : '私有');
-    console.log('====================================');
+    console.log('==============================');
 
     try {
-      // await gunService.saveMarkdown(currentDocId, content, isPublic, tags, category, title); 
-      // let cid = await ipfsService.saveMarkdown(currentDocId, content, isPublic, tags, category, title); 
-      let cid = "**************************";
-      // console.log("article key in ipfs:",cid);// TODO 显示保存后的提示信息
-      showMessage('success', "article key in ipfs:"+ cid);
-      // await gunService.saveCIDToIPFS(currentDocId, cid); 
-      showMessage('success', isPublic ? '文档已保存并发布' : '文档已保存');
-      loadDocuments(); // 刷新文档列表
+      const result = await documentService.save({
+        id: currentDocId,
+        title,
+        content,
+        tags,
+        category,
+        isPublic,
+      });
+
+      if (result.success) {
+        showMessage('success', result.message);
+        loadDocuments(); // 刷新文档列表
+      } else {
+        showMessage('error', result.message);
+      }
     } catch (err) {
-      showMessage('error', '保存失败');
+      console.error('保存文档异常:', err);
+      showMessage('error', `保存失败：${err.message || '未知错误'}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const deleteDocument = async (id) => {
     try {
-      await gunService.deleteMarkdown(id);
-      if (currentDocId === id) {
-        setCurrentDocId(null);
-        setContent('');
-        setIsPublic(false);
+      const result = await documentService.delete(id);
+      if (result.success) {
+        if (currentDocId === id) {
+          setCurrentDocId(null);
+          setContent('');
+          setTitle('');
+          setIsPublic(false);
+          setTags([]);
+          setCategory({});
+        }
+        loadDocuments();
+        showMessage('success', result.message);
+      } else {
+        showMessage('error', result.message);
       }
-      loadDocuments();
-      showMessage('success', '文档已删除');
     } catch (err) {
-      showMessage('error', '删除失败');
+      console.error('删除文档异常:', err);
+      showMessage('error', `删除失败：${err.message || '未知错误'}`);
     }
   };
 
@@ -206,10 +223,15 @@ const MarkdownEditor = ({ company }) => {
 
                   <button
                     onClick={saveDocument}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={isSaving}
+                    className={`px-4 py-2 rounded ${
+                      isSaving
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
                   >
                     <FontAwesomeIcon icon={faSave} className="mr-2" />
-                    保存
+                    {isSaving ? '保存中...' : '保存'}
                   </button>
                 </div>
               </div>
