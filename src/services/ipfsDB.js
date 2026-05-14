@@ -89,9 +89,15 @@ class IPFSClient {
         chunks.push(chunk);
       }
 
-      // 合并 Buffer 并转换为字符串
-      const buffer = Buffer.concat(chunks);
-      return buffer.toString('utf8');
+      // 合并 Uint8Array 并转换为字符串
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const merged = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return new TextDecoder().decode(merged);
     } catch (error) {
       // 区分错误类型
       if (
@@ -151,11 +157,10 @@ class IPFSClient {
     }
 
     try {
-      const data = Buffer.from(
-        typeof message === 'string'
-          ? message
-          : JSON.stringify(message)
-      );
+      const text = typeof message === 'string'
+        ? message
+        : JSON.stringify(message);
+      const data = new TextEncoder().encode(text);
 
       await this.client.pubsub.publish(topic, data);
 
@@ -188,8 +193,8 @@ class IPFSClient {
       // kubo-rpc-client 的 subscribe 使用回调模式 subscribe(topic, handler, options)
       const unsubFn = await this.client.pubsub.subscribe(topic, (msg) => {
         try {
-          // msg.data 是 Uint8Array，转为 Buffer 再解码为字符串
-          const raw = Buffer.from(msg.data).toString('utf8');
+          // msg.data 是 Uint8Array，使用 TextDecoder 解码为字符串
+          const raw = new TextDecoder().decode(msg.data);
 
           let parsed;
           try {
@@ -197,6 +202,8 @@ class IPFSClient {
           } catch {
             parsed = raw;
           }
+
+          console.log(`📩 收到 PubSub 消息 - 主题: ${topic}, 来自: ${msg.from}, 数据:`, parsed);
 
           queue.push({
             from: msg.from,
@@ -314,7 +321,14 @@ const ipfsService = {
       const result = await ipfsClient.upload(docData);
       console.log(`✅ 文档已保存到 IPFS - CID: ${result.cid}, 大小: ${result.size} bytes`);
 
-      // 将 CID 上传到 PubSub 主题
+      // 订阅 test_up_cid_12345 主题（接收他人发布的消息）
+      try {
+        await ipfsClient.pubsubSubscribe('test_up_cid_12345');
+      } catch (subError) {
+        console.error('⚠️ PubSub 订阅失败（不影响保存）:', subError.message);
+      }
+
+      // 将 CID 发布到 PubSub 主题
       try {
         await ipfsClient.pubsubPublish('test_up_cid_12345', {
           cid: result.cid,
