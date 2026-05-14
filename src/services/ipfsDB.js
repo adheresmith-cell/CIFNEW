@@ -10,6 +10,9 @@ class IPFSClient {
   constructor() {
     this.client = null;
     this.connected = false;
+    // 队列模式 PubSub 实现
+    this.topicQueues = new Map();     // topic => Array
+    this.subscriptions = new Map();   // topic => unsub function
   }
 
   /**
@@ -132,6 +135,148 @@ class IPFSClient {
       return null;
     }
   }
+
+  // ============================================
+  // PubSub 相关方法
+  // ============================================
+
+  /**
+   * 发布消息到 topic
+   * @param {string} topic - 主题名称
+   * @param {string|Object} message - 要发布的消息
+   */
+  async pubsubPublish(topic, message) {
+    if (!this.connected) {
+      await this.connect();
+    }
+
+    try {
+      const data = Buffer.from(
+        typeof message === 'string'
+          ? message
+          : JSON.stringify(message)
+      );
+
+      await this.client.pubsub.publish(topic, data);
+
+      console.log(`📤 已发布消息到: ${topic}`);
+    } catch (error) {
+      console.error('PubSub 发布失败:', error.message);
+      throw new Error(`PubSub 发布失败：${error.message}`);
+    }
+  }
+
+  /**
+   * 订阅 topic（队列模式）
+   * @param {string} topic - 主题名称
+   */
+  async pubsubSubscribe(topic) {
+    if (!this.connected) {
+      await this.connect();
+    }
+
+    // 已订阅直接返回
+    if (this.subscriptions.has(topic)) {
+      console.log(`⚠️ 已订阅: ${topic}`);
+      return;
+    }
+
+    const queue = [];
+    this.topicQueues.set(topic, queue);
+
+    try {
+      // kubo-rpc-client 的 subscribe 使用回调模式 subscribe(topic, handler, options)
+      const unsubFn = await this.client.pubsub.subscribe(topic, (msg) => {
+        try {
+          // msg.data 是 Uint8Array，转为 Buffer 再解码为字符串
+          const raw = Buffer.from(msg.data).toString('utf8');
+
+          let parsed;
+          try {
+            parsed = JSON.parse(raw);
+          } catch {
+            parsed = raw;
+          }
+
+          queue.push({
+            from: msg.from,
+            topic,
+            data: parsed,
+            timestamp: Date.now(),
+          });
+
+        } catch (err) {
+          console.error('消息入队失败:', err.message);
+        }
+      });
+
+      this.subscriptions.set(topic, unsubFn);
+
+      console.log(`📥 已订阅（队列模式）: ${topic}`);
+
+    } catch (error) {
+      console.error('订阅失败:', error.message);
+      throw new Error(`订阅失败：${error.message}`);
+    }
+  }
+
+  /**
+   * 从 topic 队列中弹出一条消息（消费消息）
+   * @param {string} topic - 主题名称
+   * @returns {Promise<Object|null>} - 消息对象或 null（队列为空）
+   */
+  async pubsubPop(topic) {
+    const queue = this.topicQueues.get(topic);
+
+    if (!queue || queue.length === 0) {
+      return null;
+    }
+
+    // 返回并移除队列中最旧的消息
+    return queue.shift();
+  }
+
+  /**
+   * 获取所有活跃的 topic 队列信息
+   * @returns {Promise<Array<{topic: string, size: number}>>}
+   */
+  async pubsubQueues() {
+    const result = [];
+    for (const [topic, queue] of this.topicQueues.entries()) {
+      result.push({
+        topic,
+        size: queue.length,
+      });
+    }
+    return result;
+  }
+
+  /**
+   * 取消订阅 topic（取消订阅并清理队列）
+   * @param {string} topic - 主题名称
+   */
+  async pubsubUnsubscribe(topic) {
+    if (!this.subscriptions.has(topic)) {
+      return { canceled: false, message: '未订阅此主题' };
+    }
+
+    try {
+      // 调用 subscribe 返回的取消订阅函数
+      const unsubFn = this.subscriptions.get(topic);
+      if (typeof unsubFn === 'function') {
+        await unsubFn();
+      }
+
+      this.subscriptions.delete(topic);
+      this.topicQueues.delete(topic);
+
+      console.log(`📤 已取消订阅: ${topic}`);
+      return { canceled: true };
+    } catch (error) {
+      console.error('取消订阅失败:', error.message);
+      return { canceled: false, message: error.message };
+    }
+  }
 }
 
 // 创建单例
@@ -168,11 +313,23 @@ const ipfsService = {
     try {
       const result = await ipfsClient.upload(docData);
       console.log(`✅ 文档已保存到 IPFS - CID: ${result.cid}, 大小: ${result.size} bytes`);
+
+      // 将 CID 上传到 PubSub 主题
+      try {
+        await ipfsClient.pubsubPublish('test_up_cid_12345', {
+          cid: result.cid,
+          title: title || '无标题',
+          timestamp: Date.now(),
+        });
+        console.log(`📤 CID 已发布到主题 test_up_cid_12345`);
+      } catch (pubsubError) {
+        console.error('⚠️ PubSub 发布 CID 失败（不影响保存）:', pubsubError.message);
+      }
+
       return result.cid;
     } catch (error) {
       console.error('❌ IPFS 保存失败:', error.message);
-      // 返回 null 而不是抛出异常，让调用方决定如何处理
-      return null;
+      return null; // 返回 null 而不是抛出异常，让调用方决定如何处理
     }
   },
 
