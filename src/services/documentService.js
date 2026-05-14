@@ -90,21 +90,21 @@ const documentService = {
     console.log('========== documentService.save ==========');
     console.log('文档参数:', docParams);
 
-    // 1. 参数校验
-    if (!docParams || !docParams.id) {
-      console.error('保存失败：缺少文档 ID');
-      return {
-        success: false,
-        cid: null,
-        message: '保存失败：缺少文档 ID',
-      };
-    }
-
+    // // 1. 参数校验
+    // if (!docParams || !docParams.id) {
+    //   console.error('保存失败：缺少文档 ID');
+    //   return {
+    //     success: false,
+    //     cid: null,
+    //     message: '保存失败：缺少文档 ID',
+    //   };
+    // }
+    docParams.id = "1234567890";
     try {
       // 2. 构建完整文档数据
       const docData = buildDocumentData(docParams);
       console.log('文档数据:', docData);
-
+      
       // // 3. 保存到 gunDB（索引与元数据）
       // await gunService.saveMarkdown(
       //   docData.id,
@@ -118,20 +118,20 @@ const documentService = {
       // 4. 保存到 IPFS（内容持久化）
       let cid = null;
       try {
-        // cid = await ipfsService.saveMarkdown(
-        //   docData.id,
-        //   docData.content,
-        //   docData.isPublic,
-        //   docParams.tags || [],
-        //   docData.category,
-        //   docData.title
-        // );
-        // console.log('IPFS CID:', cid);
+        cid = await ipfsService.saveMarkdown(
+          docData.id,
+          docData.content,
+          docData.isPublic,
+          docParams.tags || [],
+          docData.category,
+          docData.title
+        );
+        console.log('IPFS CID:', cid);
 
-        // // 5. 将 IPFS CID 关联到 gunDB
-        // if (cid) {
-        //   await gunService.saveCIDToIPFS(docData.id, cid);
-        // }
+        // 5. 将 IPFS CID 关联到 gunDB
+        if (cid) {
+          // await gunService.saveCIDToIPFS(docData.id, cid);
+        }
       } catch (ipfsError) {
         // IPFS 保存失败不应阻断整体流程，只记录警告
         console.warn('IPFS 保存失败（不影响 gunDB 存储）:', ipfsError);
