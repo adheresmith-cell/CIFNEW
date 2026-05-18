@@ -289,6 +289,8 @@ class IPFSClient {
 // 创建单例
 const ipfsClient = new IPFSClient();
 
+// 导出 ipfsClient 供其他模块（如 PubSubAggregator）使用
+export { ipfsClient };
 // ========== 兼容现有 ipfsService 接口 ==========
 
 const ipfsService = {

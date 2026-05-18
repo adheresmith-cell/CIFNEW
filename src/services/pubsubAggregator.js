@@ -10,7 +10,7 @@
  * - 生成 hour CID
  */
 
-import ipfsClient from './ipfsClient';
+import { ipfsClient } from './ipfsDB';
 
 class PubSubAggregator {
     constructor(options = {}) {

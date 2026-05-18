@@ -17,6 +17,7 @@ import { mockCompanies as initialCompanies } from './components/data/transformed
 
 
 import CytoscapeTree from './components/Editor/CytoscapeTree';
+import pubsubAggregator from './services/pubsubAggregator';
 
 // 内部组件，确保 useNavigate 在 Router 内部使用
 const AppRoutes = () => {
@@ -129,6 +130,18 @@ const AppRoutes = () => {
 };
 
 const App = () => {
+  useEffect(() => {
+    pubsubAggregator.start().catch(err => {
+      console.error('PubSubAggregator 启动失败:', err);
+    });
+
+    return () => {
+      pubsubAggregator.stop().catch(err => {
+        console.error('PubSubAggregator 停止失败:', err);
+      });
+    };
+  }, []);
+
   return (
     <SearchProvider>
       <Router>
