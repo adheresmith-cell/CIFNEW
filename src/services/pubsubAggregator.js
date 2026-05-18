@@ -11,6 +11,10 @@
  */
 
 import { ipfsClient } from './ipfsDB';
+import {
+  saveIPFSContent,
+  hasIPFSContent,
+} from './indexedDBService';
 
 class PubSubAggregator {
     constructor(options = {}) {
@@ -116,12 +120,42 @@ class PubSubAggregator {
      * 处理消息
      */
     async processMessage(msg) {
-        const filtered = this.filterMessage(msg);
+        const filtered = this.filterMessage(msg);// 消息过滤 + 标准化
 
         // 被过滤
         if (!filtered) {
             return;
         }
+
+        // ---- 新增：从 IPFS 读取内容并存储到 IndexedDB ----
+        try {
+            // 检查是否已经存储过该 CID（避免重复读取）
+            const exists = await hasIPFSContent(filtered.cid);
+            if (!exists) {
+                console.log(
+                    `📥 正在从 IPFS 读取 CID: ${filtered.cid}`
+                );
+                const content = await ipfsClient.read(
+                    filtered.cid
+                );
+
+                await saveIPFSContent(filtered.cid, content, {
+                    title: filtered.title,
+                    from: filtered.from,
+                });
+            } else {
+                console.log(
+                    `⏭️ CID 已在 IndexedDB 中，跳过: ${filtered.cid}`
+                );
+            }
+        } catch (err) {
+            // IPFS 读取或 IndexedDB 存储失败，不影响后续聚合流程
+            console.error(
+                `⚠️ 读取/存储 CID 内容失败: ${filtered.cid}`,
+                err.message
+            );
+        }
+        // ---- 结束新增 ----
 
         const hourKey = this.getHourKey(filtered.receivedAt);
 

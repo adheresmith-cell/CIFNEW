@@ -204,7 +204,11 @@ class IPFSClient {
           }
 
           console.log(`📩 收到 PubSub 消息 - 主题: ${topic}, 来自: ${msg.from}, 数据:`, parsed);
-
+          // { 数据为：
+          //     "cid": "bafkreifkin4urzmd6sepr7t3ltfkyqfigixbat5vuxutqukdlip2q5cbyi",
+          //     "title": " dfsdf s",
+          //     "timestamp": 1779106353954
+          // }
           queue.push({
             from: msg.from,
             topic,
