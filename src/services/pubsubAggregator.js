@@ -127,7 +127,8 @@ class PubSubAggregator {
             return;
         }
 
-        // ---- 新增：从 IPFS 读取内容并存储到 IndexedDB ----
+        // 
+        console.log("---- 新增：从 IPFS 读取内容并存储到 IndexedDB ----");
         try {
             // 检查是否已经存储过该 CID（避免重复读取）
             const exists = await hasIPFSContent(filtered.cid);

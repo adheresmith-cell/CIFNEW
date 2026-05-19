@@ -15,7 +15,7 @@ const gun = GUN({
 
 // 导出 Gun 相关工具函数
 const gunService = {
-  saveMarkdown: (id, content, isPublic = false, tags = [], category = "uncategorized", title = "wuti") => {
+  saveMarkdown: (id, content, isPublic = false, tags = [], category = "uncategorized", title = "wuti", companyId = "") => {
     let tagObject = tags.join('+');
     console.log("tagObject", tagObject);
     let data = {
@@ -25,7 +25,8 @@ const gunService = {
       isPublic,
       tagObject,
       category,
-      title
+      title,
+      companyId
     };
 
     // 保存到公共空间 (since no authentication, everything goes to public)

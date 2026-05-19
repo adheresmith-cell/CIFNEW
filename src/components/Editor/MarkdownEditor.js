@@ -134,6 +134,7 @@ const MarkdownEditor = ({ company }) => {
         tags,
         category,
         isPublic,
+        companyId: company?.id || '',
       });
 
       if (result.success) {

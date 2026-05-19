@@ -18,7 +18,7 @@ import ipfsService from './ipfsDB';
  * @param {boolean} params.isPublic - 是否公开
  * @returns {Object} 完整的文档数据
  */
-const buildDocumentData = ({ id, title, content, tags, category, isPublic }) => {
+const buildDocumentData = ({ id, title, content, tags, category, isPublic, companyId }) => {
   if (!id) {
     throw new Error('文档 ID 不能为空');
   }
@@ -31,6 +31,7 @@ const buildDocumentData = ({ id, title, content, tags, category, isPublic }) => 
     category: category?.label || '未分类',
     categoryId: category?.id || '',
     isPublic: !!isPublic,
+    companyId: companyId || '',
     author: 'anonymous',
     timestamp: Date.now(),
   };
@@ -53,6 +54,7 @@ const sanitizeDocumentList = (rawList) => {
       tagObject: doc.tagObject || '',
       category: doc.category || '未分类',
       isPublic: !!doc.isPublic,
+      companyId: doc.companyId || '',
       author: doc.author || 'anonymous',
       timestamp: doc.timestamp || Date.now(),
     }));
@@ -124,7 +126,8 @@ const documentService = {
           docData.isPublic,
           docParams.tags || [],
           docData.category,
-          docData.title
+          docData.title,
+          docData.companyId
         );
         console.log('IPFS CID:', cid);
 
@@ -180,6 +183,7 @@ const documentService = {
         tagObject: doc.tagObject || '',
         category: doc.category || '',
         isPublic: doc.isPublic || false,
+        companyId: doc.companyId || '',
         author: doc.author || 'anonymous',
         timestamp: doc.timestamp || Date.now(),
       };

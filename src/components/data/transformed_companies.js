@@ -1,4 +1,28 @@
 export const mockCompanies = [
+    {
+    "id": 10086,
+    "name": "测试科技",
+    "logo": "https://via.placeholder.com/80x80/FF6A00/FFFFFF?text=肇民",
+    "industry": "汽车零部件",
+    "scale": "1000-9999 人",
+    "city": "上海",
+    "description": "*******不断推进技术创新和产业升级，致力于成为行业标杆。",
+    "jobs": 119,
+    "rating": 3.8,
+    "founded": "1997 年",
+    "website": "www.shanghai.com",
+    "stockCode": "000000",
+    "englishName": "Shanghai Hajime Advanced Material Technology Co.,Ltd.",
+    "tags": "新能源汽车, 融资融券, 转融券标的, 汽车热管理, 储能, 高股息精选, 家用电器, 燃料电池, 养老金持股, 人形机器人",
+    "parent": "",
+    "related": [
+      "华域汽车",
+      "三花智控",
+      "江苏雷利",
+      "银轮股份",
+      "宗申动力"
+    ]
+  },
   {
     "id": 1,
     "name": "肇民科技",
