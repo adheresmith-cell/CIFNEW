@@ -47,9 +47,21 @@ export async function saveIPFSContent(cid, content, metadata = {}) {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
 
+    // 从 JSON 字符串 content 中解析 companyId
+    let companyId = '';
+    try {
+      const parsed = JSON.parse(content);
+      if (parsed.companyId) {
+        companyId = parsed.companyId;
+      }
+    } catch {
+      // content 不是合法 JSON，忽略
+    }
+
     await store.put({
       cid,
       content,
+      companyId,
       title: metadata.title || '',
       from: metadata.from || '',
       savedAt: Date.now(),
