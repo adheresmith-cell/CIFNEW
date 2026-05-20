@@ -27,6 +27,10 @@ const BigSearch = () => {
   const [cityIsInput, setCityIsInput] = useState(false);
 
   const handleSearch = () => {
+    // 如果当前处于输入模式，同步输入内容到 selectedCity
+    if (cityIsInput) {
+      setSelectedCity(selectedCityInput || '');
+    }
     setSearchQuery(searchInput);
     setIndustry(selectedIndustry);
     setCity(selectedCity);
@@ -176,14 +180,11 @@ const BigSearch = () => {
                   className="bg-transparent outline-none text-lg font-semibold placeholder-gray-400 text-gray-700"
                   value={selectedCityInput}
                   onDoubleClick={() => {
+                    // 双击切换到 select 模式并同步值
                     setCityIsInput(false);
                     setSelectedCity(selectedCityInput || '');
                   }}
                   onChange={(e) => setSelectedCityInput(e.target.value)}
-                  onBlur={() => {
-                    setCityIsInput(false);
-                    setSelectedCity(selectedCityInput || '');
-                  }}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
                       setCityIsInput(false);
