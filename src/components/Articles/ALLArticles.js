@@ -114,8 +114,8 @@ const ALLArticles = ({ companyId }) => {
     const loadArticles = async () => {
       try {
         setLoading(true);
-        // 从模拟 API /api/getallarticles/ 获取文章数据
-        const data = await fetchMockArticles();
+        // 从模拟 API /api/getallarticles/ 获取文章数据，传入 companyId
+        const data = await fetchMockArticles(companyId);
         console.log("ALLArticles - 从模拟 API 获取文章:", data);
         setArticles(data);
       } catch (err) {
@@ -126,7 +126,7 @@ const ALLArticles = ({ companyId }) => {
     };
 
     loadArticles();
-  }, []);
+  }, [companyId]);
 
   // 过滤文章：根据搜索关键词和公司 ID 过滤
   const filteredArticles = articles.filter(article => {

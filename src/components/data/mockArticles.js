@@ -1,3 +1,5 @@
+import { getIPFSContentByCompanyId } from '../../services/indexedDBService';
+
 // ==================== 虚假文章数据 ====================
 // 模拟从 /api/getallarticles/ 获取的文章数据
 export const MOCK_ARTICLES = [
@@ -355,11 +357,56 @@ chore: 构建/工具
 
 // ==================== 模拟 API 请求函数 ====================
 // 模拟从 /api/getallarticles/ 获取文章
-export const fetchMockArticles = () => {
-  return new Promise((resolve) => {
+// 支持传入 companyId，从 CIFNEW_DB.ipfsContent 中过滤对应数据
+export const fetchMockArticles = (companyId) => {
+  return new Promise(async (resolve) => {
     // 模拟网络延迟
-    setTimeout(() => {
-      resolve([...MOCK_ARTICLES]);
+    setTimeout(async () => {
+      let articles = [...MOCK_ARTICLES];
+
+      // 如果传入了 companyId，从 IndexedDB 的 ipfsContent 中过滤
+      if (companyId) {
+        try {
+          const ipfsRecords = await getIPFSContentByCompanyId(companyId);
+          console.log(`fetchMockArticles - 从 IndexedDB 获取到 ${ipfsRecords.length} 条 companyId=${companyId} 的记录:`, ipfsRecords);
+
+          // 将 IndexedDB 记录转换为与 MOCK_ARTICLES 相同的格式
+          const ipfsArticles = ipfsRecords.map((record) => {
+            let parsedContent = {};
+            try {
+              parsedContent = JSON.parse(record.content);
+            } catch {
+              // 如果 content 不是 JSON，直接使用
+            }
+
+            return {
+              id: record.cid,
+              title: parsedContent.title || record.title || '无标题',
+              content: parsedContent.content || record.content || '',
+              companyId: parsedContent.companyId || record.companyId || '',
+              tagObject: parsedContent.tags ? (Array.isArray(parsedContent.tags) ? parsedContent.tags.join('+') : parsedContent.tags) : '',
+              category: parsedContent.category || '',
+              timestamp: parsedContent.timestamp || record.savedAt || Date.now(),
+              author: parsedContent.author || '',
+              // 保留原始 cid 以便后续使用
+              cid: record.cid,
+              savedAt: record.savedAt,
+            };
+          });
+
+          // 合并 IndexedDB 文章和 mock 文章（mock 文章中也过滤 companyId）
+          const mockFiltered = articles.filter(a => String(a.companyId) === String(companyId));
+          articles = [...mockFiltered, ...ipfsArticles];
+          
+          console.log(`fetchMockArticles - 总计 ${articles.length} 条文章 (mock: ${mockFiltered.length}, ipfs: ${ipfsArticles.length})`);
+        } catch (err) {
+          console.error('fetchMockArticles - 从 IndexedDB 查询失败:', err);
+          // 如果 IndexedDB 查询失败，回退到只从 mock 数据中过滤
+          articles = articles.filter(a => String(a.companyId) === String(companyId));
+        }
+      }
+
+      resolve(articles);
     }, 500);
   });
 };

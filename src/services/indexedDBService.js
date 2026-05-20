@@ -92,6 +92,25 @@ export async function getIPFSContent(cid) {
 }
 
 /**
+ * 按 companyId 查询所有匹配的 IPFS 内容
+ *
+ * @param {string|number} companyId - 公司 ID
+ * @returns {Promise<Array<Object>>} - 匹配的记录数组
+ */
+export async function getIPFSContentByCompanyId(companyId) {
+  try {
+    const db = await getDB();
+    const all = await db.getAll(STORE_NAME);
+    // 过滤 companyId 匹配的记录（转为字符串比较，兼容数字和字符串类型）
+    const filtered = all.filter(item => String(item.companyId) === String(companyId));
+    return filtered;
+  } catch (error) {
+    console.error('❌ IndexedDB 按 companyId 查询失败:', error.message);
+    return [];
+  }
+}
+
+/**
  * 检查 IndexedDB 中是否存在指定 CID
  *
  * @param {string} cid
