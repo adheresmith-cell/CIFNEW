@@ -22,7 +22,9 @@ const BigSearch = () => {
 
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
+  const [selectedCityInput, setSelectedCityInput] = useState('');
   const [showRateTooltip, setShowRateTooltip] = useState(false);
+  const [cityIsInput, setCityIsInput] = useState(false);
 
   const handleSearch = () => {
     setSearchQuery(searchInput);
@@ -163,17 +165,58 @@ const BigSearch = () => {
 
             {/* 地区 */}
             <div className="flex flex-col flex-1">
-              <span className="text-xs text-gray-700 mb-1">地区</span>
-              <select
-                className="bg-transparent outline-none text-lg font-semibold text-gray-700"
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-              >
-                <option value="">全国</option>
-                <option value="北京">北京</option>
-                <option value="上海">上海</option>
-                <option value="深圳">深圳</option>
-              </select>
+              <span className="text-xs text-gray-700 mb-1">
+                地区
+                {cityIsInput && <span className="text-gray-400 ml-1 text-[10px]">(当前可输入)</span>}
+              </span>
+              {cityIsInput ? (
+                <input
+                  type="text"
+                  placeholder="请输入地区"
+                  className="bg-transparent outline-none text-lg font-semibold placeholder-gray-400 text-gray-700"
+                  value={selectedCityInput}
+                  onDoubleClick={() => {
+                    setCityIsInput(false);
+                    setSelectedCity(selectedCityInput || '');
+                  }}
+                  onChange={(e) => setSelectedCityInput(e.target.value)}
+                  onBlur={() => {
+                    setCityIsInput(false);
+                    setSelectedCity(selectedCityInput || '');
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      setCityIsInput(false);
+                      setSelectedCity(selectedCityInput || '');
+                    }
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <select
+                  className="bg-transparent outline-none text-lg font-semibold text-gray-700"
+                  value={selectedCity}
+                  onDoubleClick={() => {
+                    setCityIsInput(true);
+                    setSelectedCityInput(selectedCity);
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '其他') {
+                      setCityIsInput(true);
+                      setSelectedCityInput('');
+                    } else {
+                      setSelectedCity(val);
+                    }
+                  }}
+                >
+                  <option value="">全国</option>
+                  <option value="北京">北京</option>
+                  <option value="上海">上海</option>
+                  <option value="深圳">深圳</option>
+                  <option value="其他">其他</option>
+                </select>
+              )}
             </div>
 
             {/* 搜索按钮 */}
