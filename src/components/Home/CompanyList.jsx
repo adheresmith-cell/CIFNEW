@@ -1,19 +1,122 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CompanyCard from './CompanyCard';
 import AddCompanyModal from './AddCompanyModal';
 
+const PAGE_SIZE = 100;
+
 /**
- * 公司列表组件
+ * 分页控件组件
+ */
+function Pagination({ currentPage, totalPages, onPageChange }) {
+  if (totalPages <= 1) return null;
+
+  // 生成显示的页码列表（前后各5页）
+  const getPageNumbers = () => {
+    const pages = [];
+    const start = Math.max(1, currentPage - 5);
+    const end = Math.min(totalPages, currentPage + 5);
+
+    if (start > 1) {
+      pages.push(1);
+      if (start > 2) pages.push('...');
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (end < totalPages) {
+      if (end < totalPages - 1) pages.push('...');
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-6">
+      {/* 上一页 */}
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        上一页
+      </button>
+
+      {/* 页码 */}
+      {getPageNumbers().map((page, idx) =>
+        page === '...' ? (
+          <span key={`ellipsis-${idx}`} className="px-2 py-2 text-sm text-gray-500">
+            ...
+          </span>
+        ) : (
+          <button
+            key={page}
+            onClick={() => onPageChange(page)}
+            className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+              page === currentPage
+                ? 'bg-primary-600 text-white shadow-sm'
+                : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            {page}
+          </button>
+        )
+      )}
+
+      {/* 下一页 */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        下一页
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * 公司列表组件（含分页）
  * @param {array} companies - 公司数据列表
  * @param {function} onCompanyClick - 公司点击回调
  * @param {function} onAddCompany - 新增公司回调
  */
 function CompanyList({ companies, onCompanyClick, onAddCompany }) {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // 按 id 升序排序
+  const sortedCompanies = [...companies].sort((a, b) => a.id - b.id);
+  const totalPages = Math.ceil(sortedCompanies.length / PAGE_SIZE);
+
+  // 当列表数据变化时，如果当前页超出总页数则回退到第1页
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  // 截取当前页数据
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const currentCompanies = sortedCompanies.slice(startIndex, startIndex + PAGE_SIZE);
 
   const handleAddCompany = (newCompany) => {
     onAddCompany(newCompany);
     setShowAddModal(false);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    // 滚动到列表顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (companies.length === 0) {
@@ -58,7 +161,12 @@ function CompanyList({ companies, onCompanyClick, onAddCompany }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600">
-          共找到 <span className="font-semibold text-primary-600">{companies.length}</span> 家公司
+          共找到 <span className="font-semibold text-primary-600">{sortedCompanies.length}</span> 家公司
+          {totalPages > 1 && (
+            <span className="text-gray-400 ml-2">
+              （第 {currentPage} / {totalPages} 页）
+            </span>
+          )}
         </p>
         <button
           onClick={() => setShowAddModal(true)}
@@ -70,13 +178,21 @@ function CompanyList({ companies, onCompanyClick, onAddCompany }) {
           新增公司节点
         </button>
       </div>
-      {companies.map((company) => (
+
+      {currentCompanies.map((company) => (
         <CompanyCard
           key={company.id}
           company={company}
           onClick={onCompanyClick}
         />
       ))}
+
+      {/* 分页控件 */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
 
       <AddCompanyModal
         isOpen={showAddModal}
