@@ -89,9 +89,8 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
  * @param {function} onCompanyClick - 公司点击回调
  * @param {function} onAddCompany - 新增公司回调
  */
-function CompanyList({ companies, onCompanyClick, onAddCompany }) {
+function CompanyList({ companies, onCompanyClick, onAddCompany, currentPage, onPageChange }) {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
 
   // 按 id 升序排序
   const sortedCompanies = [...companies].sort((a, b) => a.id - b.id);
@@ -100,9 +99,9 @@ function CompanyList({ companies, onCompanyClick, onAddCompany }) {
   // 当列表数据变化时，如果当前页超出总页数则回退到第1页
   useEffect(() => {
     if (currentPage > totalPages) {
-      setCurrentPage(1);
+      onPageChange(1);
     }
-  }, [totalPages, currentPage]);
+  }, [totalPages, currentPage, onPageChange]);
 
   // 截取当前页数据
   const startIndex = (currentPage - 1) * PAGE_SIZE;
@@ -114,7 +113,7 @@ function CompanyList({ companies, onCompanyClick, onAddCompany }) {
   };
 
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    onPageChange(page);
     // 滚动到列表顶部
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

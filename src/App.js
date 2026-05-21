@@ -23,6 +23,7 @@ import pubsubAggregator from './services/pubsubAggregator';
 const AppRoutes = () => {
   const [companies, setCompanies] = useState(initialCompanies);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [listCurrentPage, setListCurrentPage] = useState(1);
   const { searchQuery, industry, city } = useSearch();
   const filteredCompanies = companies.filter(company => {
     const query = searchQuery.toLowerCase().trim();
@@ -59,7 +60,7 @@ const AppRoutes = () => {
     setSelectedCompany(null);
     setIsEditing(false);
     setEditCompany(null);
-  }, []);
+  }, [setSelectedCompany, setIsEditing, setEditCompany]);
 
   const handleEdit = useCallback((company) => {
     setEditCompany(company);
@@ -99,6 +100,8 @@ const AppRoutes = () => {
                       companies={filteredCompanies}
                       onCompanyClick={handleCompanyClick}
                       onAddCompany={(newCompany) => setCompanies(prev => [...prev, newCompany])}
+                      currentPage={listCurrentPage}
+                      onPageChange={setListCurrentPage}
                     />
                     {/* <ALLArticles /> */}
                   </>
