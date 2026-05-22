@@ -375,6 +375,11 @@ class PubSubAggregator {
      */
     async publishSumResult(hourKey, hourCid, count) {
         try {
+            // 随机等待 1~10 秒，防止多节点同时 flush 时碰撞
+            const delayMs = 1000 + Math.random() * 9000;
+            console.log(`⏳ 等待 ${Math.round(delayMs / 1000)} 秒后发布 flush 结果到 ${this.sumTopic}`);
+            await this.sleep(delayMs);
+
             const payload = {
                 type: 'hour_flush',
                 topic: this.topic,
