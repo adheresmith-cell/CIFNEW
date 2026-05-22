@@ -33,8 +33,11 @@ class PubSubAggregator {
         // 最大 bucket 数量
         this.maxBucketSize = options.maxBucketSize || 1000;
 
-        // topic
+        // 接收消息的 topic（上游 CID）
         this.topic = options.topic || 'test_up_cid_12345';
+
+        // 发送 flush 结果的 topic（汇总 CID）
+        this.sumTopic = options.sumTopic || 'test_sum_cid_12345';
 
         // timer
         this.flushTimer = null;
@@ -53,8 +56,11 @@ class PubSubAggregator {
 
         console.log(`🚀 启动 PubSubAggregator`);
 
-        // 订阅 topic
+        // 订阅上游消息 topic
         await ipfsClient.pubsubSubscribe(this.topic);
+
+        // 订阅汇总结果 topic
+        await ipfsClient.pubsubSubscribe(this.sumTopic);
 
         // 启动消息轮询
         this.startConsumeLoop();
@@ -83,6 +89,7 @@ class PubSubAggregator {
         await this.flushAllBuckets();
 
         await ipfsClient.pubsubUnsubscribe(this.topic);
+        await ipfsClient.pubsubUnsubscribe(this.sumTopic);
 
         this.started = false;
 
@@ -323,6 +330,9 @@ class PubSubAggregator {
             // 保存 hour index
             await this.flushHourIndex();
 
+            // 将 flush 结果（hour CID）发布到 sumTopic
+            await this.publishSumResult(hourKey, hourCid, bucket.length);
+
         } catch (err) {
             console.error(
                 `❌ flushBucket 失败: ${hourKey}`,
@@ -354,6 +364,39 @@ class PubSubAggregator {
 
         } catch (err) {
             console.error('flushHourIndex 失败:', err);
+        }
+    }
+
+    /**
+     * 将 flush 结果发布到 sumTopic
+     *
+     * 定时 flush 后将 hour bucket 的汇总 CID 发送到 test_sum_cid_12345
+     * 这样订阅 test_sum_cid_12345 的节点就能收到聚合结果
+     */
+    async publishSumResult(hourKey, hourCid, count) {
+        try {
+            const payload = {
+                type: 'hour_flush',
+                topic: this.topic,
+                hour: hourKey,
+                cid: hourCid,
+                count,
+                timestamp: Date.now(),
+            };
+
+            await ipfsClient.pubsubPublish(this.sumTopic, payload);
+
+            console.log(
+                `📤 Flush 结果已发布到 ${this.sumTopic}:
+                hour=${hourKey}
+                cid=${hourCid}
+                count=${count}`
+            );
+        } catch (err) {
+            console.error(
+                `❌ 发布 flush 结果到 ${this.sumTopic} 失败:`,
+                err
+            );
         }
     }
 

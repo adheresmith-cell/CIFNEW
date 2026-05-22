@@ -114,8 +114,6 @@ function CompanyList({ companies, onCompanyClick, onAddCompany, currentPage, onP
 
   const handlePageChange = (page) => {
     onPageChange(page);
-    // 滚动到列表顶部
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (companies.length === 0) {
