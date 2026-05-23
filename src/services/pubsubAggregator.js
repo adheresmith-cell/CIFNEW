@@ -425,6 +425,11 @@ class PubSubAggregator {
         let dedupCount = 0;
         let msg;
         while ((msg = await ipfsClient.pubsubPop(this.sumTopic)) !== null) {
+            // 每次比较前随机等待 1~10 秒，避免多节点同时消费碰撞
+            const delayMs = 1000 + Math.random() * 9000;
+            console.log(`⏳ consumeAndDedupFromSumTopic 等待 ${Math.round(delayMs / 1000)} 秒后处理下一条 sumTopic 消息`);
+            await this.sleep(delayMs);
+
             const data = msg.data;
             if (!data || !data.hour || !data.cid) continue;
 
