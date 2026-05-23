@@ -282,9 +282,13 @@ class PubSubAggregator {
      * hourKey = "2026-05-17-14" 表示：2026-05-17 14:00 ~ 14:59 这一小时内的所有消息
      */
     async flushBucket(hourKey) {
-        const bucket = this.hourBuckets.get(hourKey);// 获取 bucket，即该小时对应的消息数组
+        // 先消费 sumTopic 消息，移除本地 bucket 中已被其他节点 flush 的重复消息
+        await this.consumeAndDedupFromSumTopic();
 
+        // 获取去重后的 bucket
+        const bucket = this.hourBuckets.get(hourKey);
         if (!bucket || bucket.length === 0) {
+            console.log(`⏭️ hour=${hourKey} 的全部消息已被其他节点处理，跳过 flush`);
             return;
         }
 
@@ -292,7 +296,7 @@ class PubSubAggregator {
             `💾 开始 flush hour bucket: ${hourKey}, count=${bucket.length}`
         );
 
-        // 归档“文件内容”：metadata + bucket
+        // 归档"文件内容"：metadata + bucket（仅含本地独有消息）
         const payload = {
             topic: this.topic,
             hour: hourKey,
@@ -323,20 +327,8 @@ class PubSubAggregator {
                 count=${bucket.length}`
             );
 
-            // 保存 hour index
-            // await this.flushHourIndex();
-
-            // 在发布前消费 sumTopic 消息，移除本地 bucket 中已被其他节点 flush 的重复消息
-            await this.consumeAndDedupFromSumTopic();
-
-            // 重新获取去重后的 bucket（可能已被其他节点全部处理）
-            const finalBucket = this.hourBuckets.get(hourKey);
-            if (finalBucket && finalBucket.length === 0) {
-                // 全部已被其他节点处理，跳过发布
-                this.hourBuckets.delete(hourKey);
-                console.log(`⏭️ hour=${hourKey} 的全部消息已被其他节点处理，跳过发布`);
-                return;
-            }
+            // 保存 hour index----this.hourIndex的Map内容后续再处理
+            // await this.flushHourIndex(); 
 
             // flush 后清理内存
             this.hourBuckets.delete(hourKey);
