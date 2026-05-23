@@ -202,7 +202,7 @@ class IPFSClient {
           } catch {
             parsed = raw;
           }
-
+          console.log(this.topicQueues);
           console.log(`📩 收到 PubSub 消息 - 主题: ${topic}, 来自: ${msg.from}, 数据:`, parsed);
           // { 数据为：
           //     "cid": "bafkreifkin4urzmd6sepr7t3ltfkyqfigixbat5vuxutqukdlip2q5cbyi",

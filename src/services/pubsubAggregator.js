@@ -323,12 +323,23 @@ class PubSubAggregator {
                 count=${bucket.length}`
             );
 
+            // 保存 hour index
+            // await this.flushHourIndex();
+
+            // 在发布前消费 sumTopic 消息，移除本地 bucket 中已被其他节点 flush 的重复消息
+            await this.consumeAndDedupFromSumTopic();
+
+            // 重新获取去重后的 bucket（可能已被其他节点全部处理）
+            const finalBucket = this.hourBuckets.get(hourKey);
+            if (finalBucket && finalBucket.length === 0) {
+                // 全部已被其他节点处理，跳过发布
+                this.hourBuckets.delete(hourKey);
+                console.log(`⏭️ hour=${hourKey} 的全部消息已被其他节点处理，跳过发布`);
+                return;
+            }
+
             // flush 后清理内存
             this.hourBuckets.delete(hourKey);
-
-            // 可选：
-            // 保存 hour index
-            await this.flushHourIndex();
 
             // 将 flush 结果（hour CID）发布到 sumTopic
             await this.publishSumResult(hourKey, hourCid, bucket.length);
@@ -411,6 +422,58 @@ class PubSubAggregator {
     async flushAllBuckets() {
         for (const [hourKey] of this.hourBuckets.entries()) {
             await this.flushBucket(hourKey);
+        }
+    }
+
+    /**
+     * 在发布 flush 结果前，消费 sumTopic 队列中的消息，
+     * 读取其他节点已 flush 的内容，从本地 hourBuckets 中移除重复消息
+     */
+    async consumeAndDedupFromSumTopic() {
+        let dedupCount = 0;
+        let msg;
+        while ((msg = await ipfsClient.pubsubPop(this.sumTopic)) !== null) {
+            const data = msg.data;
+            if (!data || !data.hour || !data.cid) continue;
+
+            const hourKey = data.hour;
+            const localBucket = this.hourBuckets.get(hourKey);
+            if (!localBucket || localBucket.length === 0) continue;
+
+            try {
+                // 读取其他节点已 flush 的 IPFS 内容
+                const remoteRaw = await ipfsClient.read(data.cid);
+                const remotePayload = JSON.parse(remoteRaw);
+                const remoteMessages = remotePayload.messages || [];
+
+                if (remoteMessages.length === 0) continue;
+
+                // 收集其他节点消息的 cid 集合
+                const remoteCids = new Set(
+                    remoteMessages.map(m => m.cid)
+                );
+
+                // 从本地 bucket 中过滤掉重复的
+                const before = localBucket.length;
+                const deduped = localBucket.filter(
+                    m => !remoteCids.has(m.cid)
+                );
+
+                if (deduped.length < before) {
+                    const removed = before - deduped.length;
+                    dedupCount += removed;
+                    console.log(
+                        `🗑️ hour=${hourKey}: 从本地 bucket 移除 ${removed} 条重复消息（其他节点已 flush）`
+                    );
+                    this.hourBuckets.set(hourKey, deduped);
+                }
+            } catch (err) {
+                console.error(`⚠️ 读取远程 flush 内容失败 (cid=${data.cid}):`, err.message);
+            }
+        }
+
+        if (dedupCount > 0) {
+            console.log(`✅ 共移除 ${dedupCount} 条重复消息`);
         }
     }
 
