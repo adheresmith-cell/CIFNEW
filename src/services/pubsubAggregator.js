@@ -464,6 +464,32 @@ class PubSubAggregator {
                     );
                     this.hourBuckets.set(hourKey, deduped);
                 }
+
+                // 将其他节点 flush 的消息（本地没有的项目）插入到 IndexedDB
+                for (const remoteMsg of remoteMessages) {
+                    // 跳过本地已见过的 CID（已在 processMessage 中处理过）
+                    if (this.seenCids.has(remoteMsg.cid)) {
+                        continue;
+                    }
+
+                    try {
+                        const exists = await hasIPFSContent(remoteMsg.cid);
+                        if (!exists) {
+                            console.log(`📥 [dedup] 从 IPFS 读取远程消息 CID: ${remoteMsg.cid}`);
+                            const content = await ipfsClient.read(remoteMsg.cid);
+
+                            await saveIPFSContent(remoteMsg.cid, content, {
+                                title: remoteMsg.title || '',
+                                from: remoteMsg.from || '',
+                            });
+                        }
+                    } catch (err) {
+                        console.error(
+                            `⚠️ [dedup] 保存远程消息到 IndexedDB 失败: ${remoteMsg.cid}`,
+                            err.message
+                        );
+                    }
+                }
             } catch (err) {
                 console.error(`⚠️ 读取远程 flush 内容失败 (cid=${data.cid}):`, err.message);
             }
