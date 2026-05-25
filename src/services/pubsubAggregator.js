@@ -467,11 +467,9 @@ class PubSubAggregator {
 
                 // 将其他节点 flush 的消息（本地没有的项目）插入到 IndexedDB
                 for (const remoteMsg of remoteMessages) {
-                    // 跳过本地已见过的 CID（已在 processMessage 中处理过）
-                    if (this.seenCids.has(remoteMsg.cid)) {
-                        continue;
-                    }
-
+                    // 不依赖 this.seenCids 判断，直接以 IndexedDB 实际状态为准，
+                    // 因为 processMessage 中 saveIPFSContent 可能失败，
+                    // 此时 CID 虽已进入 seenCids，但内容并未存入 IndexedDB
                     try {
                         const exists = await hasIPFSContent(remoteMsg.cid);
                         if (!exists) {
