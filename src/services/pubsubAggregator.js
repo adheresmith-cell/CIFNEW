@@ -21,9 +21,6 @@ class PubSubAggregator {
         // topic => Array<message>
         this.hourBuckets = new Map();
 
-        // 去重
-        this.seenCids = new Set();
-
         // 保存 hour -> cid
         this.hourIndex = new Map();
 
@@ -209,15 +206,6 @@ class PubSubAggregator {
                 return null;
             }
 
-            // 去重
-            if (this.seenCids.has(data.cid)) {
-                console.log(`⚠️ 重复 CID: ${data.cid}`);
-
-                return null;
-            }
-
-            this.seenCids.add(data.cid);
-
             // 标准化
             return {
                 cid: data.cid,
@@ -292,17 +280,29 @@ class PubSubAggregator {
             return;
         }
 
+        // 最终发送前按 CID 去重，保留最后一条
+        const dedupMap = new Map();
+        for (const msg of bucket) {
+            dedupMap.set(msg.cid, msg);
+        }
+        const dedupedBucket = Array.from(dedupMap.values());
+        if (dedupedBucket.length < bucket.length) {
+            const removed = bucket.length - dedupedBucket.length;
+            console.log(`🗑️ hour=${hourKey}: 最终去重移除 ${removed} 条重复 CID 消息`);
+            this.hourBuckets.set(hourKey, dedupedBucket);
+        }
+
         console.log(
-            `💾 开始 flush hour bucket: ${hourKey}, count=${bucket.length}`
+            `💾 开始 flush hour bucket: ${hourKey}, count=${dedupedBucket.length}`
         );
 
         // 归档"文件内容"：metadata + bucket（仅含本地独有消息）
         const payload = {
             topic: this.topic,
             hour: hourKey,
-            count: bucket.length,
+            count: dedupedBucket.length,
             createdAt: Date.now(),
-            messages: bucket,
+            messages: dedupedBucket,
         };
 
         // 上传到 IPFS
@@ -316,7 +316,7 @@ class PubSubAggregator {
             // 保存 index
             this.hourIndex.set(hourKey, {
                 cid: hourCid,
-                count: bucket.length,
+                count: dedupedBucket.length,
                 flushedAt: Date.now(),
             });
 
@@ -324,7 +324,7 @@ class PubSubAggregator {
                 `✅ Hour Bucket 已上传:
                 hour=${hourKey}
                 cid=${hourCid}
-                count=${bucket.length}`
+                count=${dedupedBucket.length}`
             );
 
             // 保存 hour index----this.hourIndex的Map内容后续再处理
@@ -334,7 +334,7 @@ class PubSubAggregator {
             this.hourBuckets.delete(hourKey);
 
             // 将 flush 结果（hour CID）发布到 sumTopic
-            await this.publishSumResult(hourKey, hourCid, bucket.length);
+            await this.publishSumResult(hourKey, hourCid, dedupedBucket.length);
 
         } catch (err) {
             console.error(
@@ -467,9 +467,7 @@ class PubSubAggregator {
 
                 // 将其他节点 flush 的消息（本地没有的项目）插入到 IndexedDB
                 for (const remoteMsg of remoteMessages) {
-                    // 不依赖 this.seenCids 判断，直接以 IndexedDB 实际状态为准，
-                    // 因为 processMessage 中 saveIPFSContent 可能失败，
-                    // 此时 CID 虽已进入 seenCids，但内容并未存入 IndexedDB
+                    // 以 IndexedDB 实际状态为准，已存的跳过，未存的从 IPFS 读取后保存
                     try {
                         const exists = await hasIPFSContent(remoteMsg.cid);
                         if (!exists) {
