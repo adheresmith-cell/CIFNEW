@@ -12,9 +12,12 @@ import {
   faTags,
   faProjectDiagram,
   faBuilding,
+  faPencilAlt,
+  faClipboardList,
 } from '@fortawesome/free-solid-svg-icons';
 import documentService from '../../services/documentService';
 import CytoscapeTree from './CytoscapeTree';
+import SurveyEditor from './SurveyEditor';
 import { useIndexedDB } from "../../services/useIndexedDB";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -37,6 +40,7 @@ const MarkdownEditor = ({ company }) => {
     { label: '项目文档', id: '2' },
   ]);
   const [isSaving, setIsSaving] = useState(false);
+  const [editorMode, setEditorMode] = useState('markdown'); // 'markdown' | 'survey'
   
   useEffect(() => {
     loadDocuments();
@@ -209,7 +213,35 @@ const MarkdownEditor = ({ company }) => {
                 <h2 className="text-xl font-bold">
                   {currentDocId ? `编辑文档 ${currentDocId}` : '新建文档'}
                 </h2>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  {/* 编辑器模式切换按钮 */}
+                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5 mr-2">
+                    <button
+                      onClick={() => setEditorMode('markdown')}
+                      className={`flex items-center px-2.5 py-1.5 text-xs rounded-md transition-colors ${
+                        editorMode === 'markdown'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                      title="Markdown 编辑器"
+                    >
+                      <FontAwesomeIcon icon={faPencilAlt} className="mr-1.5" />
+                      MD
+                    </button>
+                    <button
+                      onClick={() => setEditorMode('survey')}
+                      className={`flex items-center px-2.5 py-1.5 text-xs rounded-md transition-colors ${
+                        editorMode === 'survey'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                      title="OfferShow 薪酬爆料输入"
+                    >
+                      <FontAwesomeIcon icon={faClipboardList} className="mr-1.5" />
+                      OfferShow
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => setIsPublic(!isPublic)}
                     className={`flex items-center px-3 py-1 rounded ${
@@ -281,12 +313,19 @@ const MarkdownEditor = ({ company }) => {
                 />
               </div>
 
-              <MDEditor
-                value={content}
-                onChange={setContent}
-                height={500}
-                preview="edit"
-              />
+              {editorMode === 'markdown' ? (
+                <MDEditor
+                  value={content}
+                  onChange={setContent}
+                  height={500}
+                  preview="edit"
+                />
+              ) : (
+                <SurveyEditor
+                  value={content}
+                  onChange={setContent}
+                />
+              )}
             </div>
           )}
         </div>
