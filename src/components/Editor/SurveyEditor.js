@@ -62,6 +62,24 @@ const SurveyEditor = ({ value, onChange }) => {
       });
     }
 
+    // 提取工作时间
+    const workMatch = content.match(/## ⏰ 工作时间\n\n([^#]+)/);
+    if (workMatch) {
+      const lines = workMatch[1].split('\n').filter(l => l.trim());
+      lines.forEach(line => {
+        const match = line.match(/^- \*\*([^*]+)\*\*: (.+)/);
+        if (match) {
+          const key = match[1].trim();
+          const val = match[2].trim();
+          if (key.includes('工作日')) survey.workSchedule.workDays = val;
+          else if (key.includes('工作时段')) survey.workSchedule.workHours = val;
+          else if (key.includes('加班')) survey.workSchedule.overtime = val;
+          else if (key.includes('弹性')) survey.workSchedule.flexible = val;
+          else if (key.includes('考勤')) survey.workSchedule.attendance = val;
+        }
+      });
+    }
+
     // 提取面试经历
     const interviewMatch = content.match(/## 📋 面试经历\n\n([^#]+)/);
     if (interviewMatch) {
@@ -126,6 +144,19 @@ const SurveyEditor = ({ value, onChange }) => {
       }
     }
 
+    // 确保所有默认字段都存在（兼容旧数据）
+    const defaults = getDefaultSurvey();
+    Object.keys(defaults).forEach(section => {
+      if (!survey[section]) {
+        survey[section] = defaults[section];
+      } else if (typeof defaults[section] === 'object' && !Array.isArray(defaults[section])) {
+        Object.keys(defaults[section]).forEach(field => {
+          if (survey[section][field] === undefined) {
+            survey[section][field] = defaults[section][field];
+          }
+        });
+      }
+    });
     return survey;
   };
 
@@ -145,6 +176,13 @@ const SurveyEditor = ({ value, onChange }) => {
       other: '',
     },
     benefits: [''],
+    workSchedule: {
+      workDays: '',
+      workHours: '',
+      overtime: '',
+      flexible: '',
+      attendance: '',
+    },
     interview: {
       difficulty: '',
       rounds: '',
@@ -210,6 +248,18 @@ const SurveyEditor = ({ value, onChange }) => {
       validBenefits.forEach(b => {
         lines.push(`- ${b.trim()}`);
       });
+      lines.push('');
+    }
+
+    // 工作时间
+    const hasWorkSchedule = Object.values(data.workSchedule).some(v => v?.trim());
+    if (hasWorkSchedule) {
+      lines.push('## ⏰ 工作时间', '');
+      if (data.workSchedule.workDays?.trim()) lines.push(`- **工作日**: ${data.workSchedule.workDays.trim()}`);
+      if (data.workSchedule.workHours?.trim()) lines.push(`- **工作时段**: ${data.workSchedule.workHours.trim()}`);
+      if (data.workSchedule.overtime?.trim()) lines.push(`- **加班情况**: ${data.workSchedule.overtime.trim()}`);
+      if (data.workSchedule.flexible?.trim()) lines.push(`- **弹性工作**: ${data.workSchedule.flexible.trim()}`);
+      if (data.workSchedule.attendance?.trim()) lines.push(`- **考勤要求**: ${data.workSchedule.attendance.trim()}`);
       lines.push('');
     }
 
@@ -478,6 +528,86 @@ const SurveyEditor = ({ value, onChange }) => {
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 工作时间 */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center mb-3">
+          <div className="w-2 h-6 bg-cyan-500 rounded mr-2"></div>
+          <label className="text-sm font-medium text-gray-700">⏰ 工作时间</label>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">工作日</label>
+            <select
+              value={survey.workSchedule.workDays}
+              onChange={(e) => updateField('workSchedule', 'workDays', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+            >
+              <option value="">请选择</option>
+              <option value="周一至周五（5天）">周一至周五（5天）</option>
+              <option value="大小周">大小周</option>
+              <option value="单休（6天）">单休（6天）</option>
+              <option value="排班制">排班制</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">工作时段</label>
+            <select
+              value={survey.workSchedule.workHours}
+              onChange={(e) => updateField('workSchedule', 'workHours', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+            >
+              <option value="">请选择</option>
+              <option value="9:00-18:00（8小时）">9:00-18:00（8小时）</option>
+              <option value="9:30-18:30（8小时）">9:30-18:30（8小时）</option>
+              <option value="10:00-19:00（8小时）">10:00-19:00（8小时）</option>
+              <option value="996（9:00-21:00 六天）">996（9:00-21:00 六天）</option>
+              <option value="007（24小时待命）">007（24小时待命）</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">加班情况</label>
+            <select
+              value={survey.workSchedule.overtime}
+              onChange={(e) => updateField('workSchedule', 'overtime', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+            >
+              <option value="">请选择</option>
+              <option value="基本不加班">基本不加班</option>
+              <option value="偶尔加班">偶尔加班</option>
+              <option value="经常加班">经常加班</option>
+              <option value="常态化加班">常态化加班</option>
+              <option value="严重加班（996）">严重加班（996）</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">弹性工作</label>
+            <select
+              value={survey.workSchedule.flexible}
+              onChange={(e) => updateField('workSchedule', 'flexible', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+            >
+              <option value="">请选择</option>
+              <option value="完全弹性，不打卡">完全弹性，不打卡</option>
+              <option value="弹性上下班，核心时段在岗">弹性上下班，核心时段在岗</option>
+              <option value="固定时间，需打卡">固定时间，需打卡</option>
+              <option value="严格考勤">严格考勤</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">考勤要求</label>
+            <input
+              type="text"
+              value={survey.workSchedule.attendance}
+              onChange={(e) => updateField('workSchedule', 'attendance', e.target.value)}
+              placeholder="例如：钉钉打卡、指纹打卡等"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
         </div>
       </div>
 
