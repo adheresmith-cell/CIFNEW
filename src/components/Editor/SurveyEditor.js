@@ -342,6 +342,45 @@ const SurveyEditor = ({ value, onChange }) => {
   // 预览生成的 Markdown
   const [showPreview, setShowPreview] = useState(false);
 
+  // 折叠状态：每个模块默认展开
+  const [collapsed, setCollapsed] = useState({
+    company: true,
+    salary: true,
+    benefits: true,
+    workSchedule: true,
+    background: true,
+    interview: true,
+    rating: true,
+  });
+
+  const toggleCollapse = (section) => {
+    setCollapsed(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // 渲染模块 header 的通用函数：带色条、图标标题、折叠箭头
+  const renderHeader = (section, color, iconLabel, extraRight) => (
+    <div
+      className="flex items-center justify-between cursor-pointer select-none"
+      onClick={() => toggleCollapse(section)}
+    >
+      <div className="flex items-center">
+        <div className={`w-2 h-6 ${color} rounded mr-2`}></div>
+        <label className="text-sm font-medium text-gray-700">{iconLabel}</label>
+      </div>
+      <div className="flex items-center gap-2">
+        {extraRight}
+        <svg
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${collapsed[section] ? '' : 'rotate-180'}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* 工具栏 */}
@@ -375,11 +414,9 @@ const SurveyEditor = ({ value, onChange }) => {
 
       {/* 公司信息 */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center mb-3">
-          <div className="w-2 h-6 bg-blue-500 rounded mr-2"></div>
-          <label className="text-sm font-medium text-gray-700">🏢 公司信息</label>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {renderHeader('company', 'bg-blue-500', '🏢 公司信息')}
+        {!collapsed.company && (
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">公司名称</label>
             <input
@@ -421,15 +458,14 @@ const SurveyEditor = ({ value, onChange }) => {
             />
           </div>
         </div>
+        )}
       </div>
 
       {/* 薪酬待遇 */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center mb-3">
-          <div className="w-2 h-6 bg-green-500 rounded mr-2"></div>
-          <label className="text-sm font-medium text-gray-700">💰 薪酬待遇</label>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {renderHeader('salary', 'bg-green-500', '💰 薪酬待遇')}
+        {!collapsed.salary && (
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">月薪（K）</label>
             <input
@@ -491,23 +527,21 @@ const SurveyEditor = ({ value, onChange }) => {
             />
           </div>
         </div>
+        )}
       </div>
 
       {/* 福利待遇 */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center">
-            <div className="w-2 h-6 bg-purple-500 rounded mr-2"></div>
-            <label className="text-sm font-medium text-gray-700">🎁 福利待遇</label>
-          </div>
+        {renderHeader('benefits', 'bg-purple-500', '🎁 福利待遇', (
           <button
-            onClick={() => addListItem('benefits')}
+            onClick={(e) => { e.stopPropagation(); addListItem('benefits'); }}
             className="px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
           >
             + 添加福利
           </button>
-        </div>
-        <div className="space-y-2">
+        ))}
+        {!collapsed.benefits && (
+        <div className="mt-3 space-y-2">
           {survey.benefits.map((benefit, index) => (
             <div key={index} className="flex items-center gap-2">
               <span className="text-green-500 text-sm">✓</span>
@@ -529,15 +563,14 @@ const SurveyEditor = ({ value, onChange }) => {
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* 工作时间 */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center mb-3">
-          <div className="w-2 h-6 bg-cyan-500 rounded mr-2"></div>
-          <label className="text-sm font-medium text-gray-700">⏰ 工作时间</label>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {renderHeader('workSchedule', 'bg-cyan-500', '⏰ 工作时间')}
+        {!collapsed.workSchedule && (
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">工作日</label>
             <select
@@ -609,14 +642,14 @@ const SurveyEditor = ({ value, onChange }) => {
             />
           </div>
         </div>
+        )}
       </div>
 
       {/* 个人背景 */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center mb-3">
-          <div className="w-2 h-6 bg-teal-500 rounded mr-2"></div>
-          <label className="text-sm font-medium text-gray-700">👤 个人背景</label>
-        </div>
+        {renderHeader('background', 'bg-teal-500', '👤 个人背景')}
+        {!collapsed.background && (
+        <div className="mt-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">工作年限</label>
@@ -682,14 +715,15 @@ const SurveyEditor = ({ value, onChange }) => {
             />
           </div>
         </div>
+        </div>
+        )}
       </div>
 
       {/* 面试经历 */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center mb-3">
-          <div className="w-2 h-6 bg-orange-500 rounded mr-2"></div>
-          <label className="text-sm font-medium text-gray-700">📋 面试经历</label>
-        </div>
+        {renderHeader('interview', 'bg-orange-500', '📋 面试经历')}
+        {!collapsed.interview && (
+        <div className="mt-3">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">面试难度</label>
@@ -794,14 +828,15 @@ const SurveyEditor = ({ value, onChange }) => {
             ))}
           </div>
         </div>
+        </div>
+        )}
       </div>
 
       {/* 总体评价 */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center mb-3">
-          <div className="w-2 h-6 bg-red-500 rounded mr-2"></div>
-          <label className="text-sm font-medium text-gray-700">⭐ 总体评价</label>
-        </div>
+        {renderHeader('rating', 'bg-red-500', '⭐ 总体评价')}
+        {!collapsed.rating && (
+        <div className="mt-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
           <div>
             <label className="block text-xs text-gray-500 mb-1">综合评级</label>
@@ -842,6 +877,8 @@ const SurveyEditor = ({ value, onChange }) => {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-vertical"
           />
         </div>
+        </div>
+        )}
       </div>
     </div>
   );
