@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
  * 提供表单化输入方式，将 Offer 爆料数据转为 Markdown 格式输出，
  * 作为 MDEditor 的替代输入方式，适用于薪资分享、面试经历爆料等场景。
  */
-const SurveyEditor = ({ value, onChange }) => {
+const SurveyEditor = ({ value, onChange, companyName = '' }) => {
   // 解析已有 content 或初始化默认结构
   const parseContent = (content) => {
     if (!content) return getDefaultSurvey();
@@ -162,7 +162,7 @@ const SurveyEditor = ({ value, onChange }) => {
 
   const getDefaultSurvey = () => ({
     company: {
-      name: '',
+      name: companyName,
       position: '',
       city: '',
       department: '',
@@ -203,7 +203,17 @@ const SurveyEditor = ({ value, onChange }) => {
     },
   });
 
-  const [survey, setSurvey] = useState(() => parseContent(value));
+  const [survey, setSurvey] = useState(() => parseContent(value || ''));
+
+  // 当 companyName prop 变化时，如果公司名称字段为空则自动填充
+  useEffect(() => {
+    if (companyName && !survey.company.name) {
+      setSurvey(prev => ({
+        ...prev,
+        company: { ...prev.company, name: companyName },
+      }));
+    }
+  }, [companyName]);
 
   // 同步到父组件
   useEffect(() => {

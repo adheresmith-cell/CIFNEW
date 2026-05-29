@@ -324,6 +324,7 @@ const MarkdownEditor = ({ company }) => {
                 <SurveyEditor
                   value={content}
                   onChange={setContent}
+                  companyName={company?.name || ''}
                 />
               )}
             </div>
