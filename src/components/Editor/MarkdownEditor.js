@@ -14,10 +14,12 @@ import {
   faBuilding,
   faPencilAlt,
   faClipboardList,
+  faQuestionCircle,
 } from '@fortawesome/free-solid-svg-icons';
 import documentService from '../../services/documentService';
 import CytoscapeTree from './CytoscapeTree';
 import SurveyEditor from './SurveyEditor';
+import QAEditor from './QAEditor';
 import { useIndexedDB } from "../../services/useIndexedDB";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -40,7 +42,7 @@ const MarkdownEditor = ({ company }) => {
     { label: '项目文档', id: '2' },
   ]);
   const [isSaving, setIsSaving] = useState(false);
-  const [editorMode, setEditorMode] = useState('markdown'); // 'markdown' | 'survey'
+  const [editorMode, setEditorMode] = useState('markdown'); // 'markdown' | 'survey' | 'qa'
   
   useEffect(() => {
     loadDocuments();
@@ -228,18 +230,30 @@ const MarkdownEditor = ({ company }) => {
                       <FontAwesomeIcon icon={faPencilAlt} className="mr-1.5" />
                       MD
                     </button>
-                    <button
-                      onClick={() => setEditorMode('survey')}
-                      className={`flex items-center px-2.5 py-1.5 text-xs rounded-md transition-colors ${
-                        editorMode === 'survey'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-500 hover:text-gray-700'
-                      }`}
-                      title="OfferShow 薪酬爆料输入"
-                    >
-                      <FontAwesomeIcon icon={faClipboardList} className="mr-1.5" />
-                      OfferShow
-                    </button>
+                      <button
+                        onClick={() => setEditorMode('survey')}
+                        className={`flex items-center px-2.5 py-1.5 text-xs rounded-md transition-colors ${
+                          editorMode === 'survey'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                        title="OfferShow 薪酬爆料输入"
+                      >
+                        <FontAwesomeIcon icon={faClipboardList} className="mr-1.5" />
+                        OfferShow
+                      </button>
+                      <button
+                        onClick={() => setEditorMode('qa')}
+                        className={`flex items-center px-2.5 py-1.5 text-xs rounded-md transition-colors ${
+                          editorMode === 'qa'
+                            ? 'bg-white text-blue-600 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                        title="问答输入"
+                      >
+                        <FontAwesomeIcon icon={faQuestionCircle} className="mr-1.5" />
+                        问答
+                      </button>
                   </div>
 
                   <button
@@ -320,8 +334,14 @@ const MarkdownEditor = ({ company }) => {
                   height={500}
                   preview="edit"
                 />
-              ) : (
+              ) : editorMode === 'survey' ? (
                 <SurveyEditor
+                  value={content}
+                  onChange={setContent}
+                  companyName={company?.name || ''}
+                />
+              ) : (
+                <QAEditor
                   value={content}
                   onChange={setContent}
                   companyName={company?.name || ''}
