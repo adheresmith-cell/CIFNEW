@@ -319,7 +319,7 @@ const ipfsService = {
       content,
       isPublic: !!isPublic,
       tags: Array.isArray(tags) ? tags : [],
-      category: typeof category === 'object' ? category?.label || '' : category || '',
+      category: category,
       companyId: companyId || '',
       timestamp: Date.now(),
       version: '1.0',

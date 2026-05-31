@@ -182,7 +182,7 @@ const HomePage = () => {
                     </div>
                     <div className="flex justify-between items-center text-xs text-gray-500">
                       <div>
-                        {article.category?.split('+')[0] || '未分类'}
+                        {article.category.type || '未分类'}
                       </div>
                       <div>
                         {new Date(article.timestamp).toLocaleDateString()}

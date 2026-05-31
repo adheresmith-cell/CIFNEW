@@ -83,7 +83,7 @@ const ArticleDetail = () => {
           <div className="flex items-center">
             <FontAwesomeIcon icon={faBuilding} className="mr-2" />
           
-            <span>{article.category.split('+')[0]+"("+article.category.split('+')[1]+")" || '未分类'}</span>
+            <span>{article.category.type || '未分类'}</span>
           </div>
 
           <div className="flex items-center">

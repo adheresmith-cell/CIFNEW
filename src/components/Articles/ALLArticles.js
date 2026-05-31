@@ -67,7 +67,7 @@ const ArticleDetailModal = ({ article, onClose }) => {
             </div>
             <div className="flex items-center">
               <FontAwesomeIcon icon={faBuilding} className="mr-2 text-blue-500" />
-              <span>{article.category.split('+')[0] + "(" + (article.category.split('+')[1] || '') + ")" || '未分类'}</span>
+              <span>{article.category.type || '未分类'}</span>
             </div>
             <div className="flex items-center">
               <FontAwesomeIcon icon={faPaperclip} className="mr-2 text-blue-500" />
@@ -195,7 +195,7 @@ const ALLArticles = ({ companyId }) => {
               <div className="flex justify-between items-center text-sm text-gray-500">
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faBuilding} className="mr-1" />
-                  <span>{article.category ? article.category.split('+')[0] : '未分类'}</span>
+                  <span>{article.category ? article.category.type : '未分类'}</span>
                 </div>
                 <div className="flex items-center">
                   <FontAwesomeIcon icon={faClock} className="mr-1" />
