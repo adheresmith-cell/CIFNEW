@@ -44,6 +44,17 @@ const MarkdownEditor = ({ company }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [editorMode, setEditorMode] = useState('markdown'); // 'markdown' | 'survey' | 'qa'
   
+  // 切换编辑器模式时自动设置分类
+  useEffect(() => {
+    if (editorMode === 'survey') {
+      setCategory({ type: 'survey', label: '薪酬' });
+    } else if (editorMode === 'qa') {
+      setCategory({ type: 'qa', label: '问答' });
+    } else {
+      setCategory({});
+    }
+  }, [editorMode]);
+
   useEffect(() => {
     loadDocuments();
   }, []);
