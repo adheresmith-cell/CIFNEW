@@ -6,7 +6,9 @@ import {
   faClock,
   faBuilding,
   faTimes,
-  faPaperclip
+  faPaperclip,
+  faQuestionCircle,
+  faFileAlt
 } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -108,6 +110,7 @@ const ALLArticles = ({ companyId }) => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedArticle, setSelectedArticle] = useState(null);
+  const [viewMode, setViewMode] = useState('article'); // 'article' | 'qa'
   const { searchQuery } = useSearch();
 
   useEffect(() => {
@@ -128,14 +131,47 @@ const ALLArticles = ({ companyId }) => {
     loadArticles();
   }, [companyId]);
 
+  // 判断文章是否为 QA 类型
+  const isQAArticle = (article) => {
+    const cat = article.category;
+    // 对象格式: { type: 'qa', ... }
+    if (typeof cat === 'object' && cat !== null) {
+      return cat.type === 'qa';
+    }
+    // 字符串格式: 包含 '问答'
+    if (typeof cat === 'string') {
+      return cat.includes('问答');
+    }
+    return false;
+  };
+
+  // 从 qa 文章的 content 中提取问题标题
+  const extractQATitle = (content) => {
+    const match = content.match(/## 📌 问题标题\n\n([^#\n]+)/);
+    return match ? match[1].trim() : null;
+  };
+
+  // 从 qa 文章的 content 中提取问题描述
+  const extractQADescription = (content) => {
+    const match = content.match(/## 📝 问题描述\n\n([^#]+)/);
+    return match ? match[1].trim().substring(0, 200) : null;
+  };
+
+  // 从 qa 文章的 content 中提取问题类型
+  const extractQAType = (content) => {
+    const match = content.match(/- \*\*问题类型\*\*: ([^\n]+)/);
+    return match ? match[1].trim() : null;
+  };
+
   // 过滤文章：根据搜索关键词和公司 ID 过滤
   const filteredArticles = articles.filter(article => {
     // 按搜索关键词过滤
     const matchesSearch = searchQuery === '' || (article.content && article.content.toLowerCase().includes(searchQuery.toLowerCase()));
     // 按公司 ID 精确过滤（如果传入companyId）
     const matchesCompany = !companyId || (article.companyId === companyId);
-    console.log("ALLArticles filteredArticles",companyId);
-    return matchesSearch && matchesCompany;
+    // 按视图模式过滤
+    const matchesMode = viewMode === 'article' ? !isQAArticle(article) : isQAArticle(article);
+    return matchesSearch && matchesCompany && matchesMode;
   });
 
   // 点击文章，弹出详情弹窗
@@ -159,57 +195,128 @@ const ALLArticles = ({ companyId }) => {
 
   return (
     <div className="w-full p-4">
+      {/* 视图切换按钮 */}
+      <div className="flex items-center mb-6 bg-gray-100 rounded-lg p-1 w-fit">
+        <button
+          onClick={() => setViewMode('article')}
+          className={`flex items-center px-4 py-2 text-sm rounded-md transition-colors ${
+            viewMode === 'article'
+              ? 'bg-white text-blue-600 shadow-sm font-medium'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <FontAwesomeIcon icon={faFileAlt} className="mr-2" />
+          文章
+        </button>
+        <button
+          onClick={() => setViewMode('qa')}
+          className={`flex items-center px-4 py-2 text-sm rounded-md transition-colors ${
+            viewMode === 'qa'
+              ? 'bg-white text-purple-600 shadow-sm font-medium'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <FontAwesomeIcon icon={faQuestionCircle} className="mr-2" />
+          问答
+        </button>
+      </div>
+
       {/* 文章列表 - 每篇文章占据一行 */}
       <div className="grid grid-cols-1 gap-6">
-        {filteredArticles.map((article) => (
-          <div
-            key={article.id}
-            onClick={() => handleArticleClick(article)}
-            className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-          >
-            <div className="p-6 relative">
-              <h3 className="text-xl font-semibold mb-2 flex items-center">
-                <FontAwesomeIcon icon={faBook} className="mr-2 text-blue-500" />
-                文档 {article.title || article.id}
-              </h3>
-              {
-                article.tagObject && article.tagObject.indexOf("+") !== -1 ? (
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    {Object.entries(article.tagObject.split('+')).map(([key, value], index) => (
-                      <span key={index} className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
-                        {value}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="absolute top-4 right-4 flex gap-2">
+        {filteredArticles.map((article) => {
+          const isQA = isQAArticle(article);
+          const qaTitle = isQA ? extractQATitle(article.content) : null;
+          const qaDesc = isQA ? extractQADescription(article.content) : null;
+          const qaType = isQA ? extractQAType(article.content) : null;
+
+          return isQA ? (
+            // QA 文章卡片 - 特殊渲染
+            <div
+              key={article.id}
+              onClick={() => handleArticleClick(article)}
+              className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-purple-500"
+            >
+              <div className="p-6 relative">
+                <h3 className="text-xl font-semibold mb-2 flex items-center text-purple-700">
+                  <FontAwesomeIcon icon={faQuestionCircle} className="mr-2 text-purple-500" />
+                  {qaTitle || article.title || article.id}
+                </h3>
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <span className="px-2 py-1 bg-purple-100 text-purple-600 text-xs rounded-full">
+                    问答
+                  </span>
+                  {qaType && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
-                          {article.tagObject}
+                      {qaType}
                     </span>
-                  </div>
-                )
-              }
-              <div className="text-gray-600 mb-4 line-clamp-3">
-                {article.content}
-              </div>
-              <div className="flex justify-between items-center text-sm text-gray-500">
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faBuilding} className="mr-1" />
-                  <span>{article.category ? article.category.type : '未分类'}</span>
+                  )}
                 </div>
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faClock} className="mr-1" />
-                  <span>{new Date(article.timestamp).toLocaleDateString()}</span>
+                <div className="text-gray-600 mb-4 line-clamp-3">
+                  {qaDesc || article.content}
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-500">
+                  <div className="flex items-center">
+                    <FontAwesomeIcon icon={faUser} className="mr-1" />
+                    <span>{article.author || '匿名'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FontAwesomeIcon icon={faClock} className="mr-1" />
+                    <span>{new Date(article.timestamp).toLocaleDateString()}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          ) : (
+            // 普通文章卡片 - 保持原有样式
+            <div
+              key={article.id}
+              onClick={() => handleArticleClick(article)}
+              className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+            >
+              <div className="p-6 relative">
+                <h3 className="text-xl font-semibold mb-2 flex items-center">
+                  <FontAwesomeIcon icon={faBook} className="mr-2 text-blue-500" />
+                  文档 {article.title || article.id}
+                </h3>
+                {
+                  article.tagObject && article.tagObject.indexOf("+") !== -1 ? (
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      {Object.entries(article.tagObject.split('+')).map(([key, value], index) => (
+                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
+                          {value}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
+                            {article.tagObject}
+                      </span>
+                    </div>
+                  )
+                }
+                <div className="text-gray-600 mb-4 line-clamp-3">
+                  {article.content}
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-500">
+                  <div className="flex items-center">
+                    <FontAwesomeIcon icon={faBuilding} className="mr-1" />
+                    <span>{article.category ? article.category.type : '未分类'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <FontAwesomeIcon icon={faClock} className="mr-1" />
+                    <span>{new Date(article.timestamp).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {filteredArticles.length === 0 && (
         <div className="text-center text-gray-500 py-10">
-          没有找到相关文章
+          {viewMode === 'article' ? '没有找到相关文章' : '没有找到相关问答'}
         </div>
       )}
 
