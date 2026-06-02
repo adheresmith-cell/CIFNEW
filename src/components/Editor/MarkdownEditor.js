@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import MDEditor from '@uiw/react-md-editor';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -43,7 +44,22 @@ const MarkdownEditor = ({ company }) => {
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const [editorMode, setEditorMode] = useState('markdown'); // 'markdown' | 'survey' | 'qa'
-  
+  const location = useLocation();
+
+  // 接收从 QACard 导航传来的参数（写回答）
+  useEffect(() => {
+    if (location.state) {
+      if (location.state.title) {
+        setTitle(location.state.title);
+      }
+      if (location.state.editorMode) {
+        setEditorMode(location.state.editorMode);
+      }
+      // 清除 state，避免刷新后重复设置
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
   // 切换编辑器模式时自动设置分类
   useEffect(() => {
     if (editorMode === 'survey') {

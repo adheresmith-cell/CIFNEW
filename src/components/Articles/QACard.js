@@ -1,8 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQuestionCircle, faUser, faClock } from '@fortawesome/free-solid-svg-icons';
+import { faQuestionCircle, faUser, faClock, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
 
 const QACard = ({ article, onClick }) => {
+  const navigate = useNavigate();
+
   // 从 qa 文章的 content 中提取问题标题
   const extractQATitle = (content) => {
     const match = content.match(/## 📌 问题标题\n\n([^#\n]+)/);
@@ -25,12 +28,22 @@ const QACard = ({ article, onClick }) => {
   const qaDesc = extractQADescription(article.content);
   const qaType = extractQAType(article.content);
 
+  const handleWriteAnswer = (e) => {
+    e.stopPropagation();
+    navigate('/editor', {
+      state: {
+        title: `A:${qaTitle || article.title || article.id}`,
+        editorMode: 'markdown',
+      }
+    });
+  };
+
   return (
-    <div
-      onClick={() => onClick(article)}
-      className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-purple-500"
-    >
-      <div className="p-6 relative">
+    <div className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow border-l-4 border-purple-500">
+      <div
+        onClick={() => onClick(article)}
+        className="p-6 relative cursor-pointer"
+      >
         <h3 className="text-xl font-semibold mb-2 flex items-center text-purple-700">
           <FontAwesomeIcon icon={faQuestionCircle} className="mr-2 text-purple-500" />
           {qaTitle || article.title || article.id}
@@ -58,6 +71,15 @@ const QACard = ({ article, onClick }) => {
             <span>{new Date(article.timestamp).toLocaleDateString()}</span>
           </div>
         </div>
+      </div>
+      <div className="px-6 pb-4">
+        <button
+          onClick={handleWriteAnswer}
+          className="flex items-center px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          <FontAwesomeIcon icon={faPencilAlt} className="mr-2" />
+          写回答
+        </button>
       </div>
     </div>
   );
