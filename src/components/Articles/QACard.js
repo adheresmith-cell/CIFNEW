@@ -34,6 +34,7 @@ const QACard = ({ article, onClick }) => {
       state: {
         title: `A:${qaTitle || article.title || article.id}`,
         editorMode: 'markdown',
+        category: { type: 'ans', label: article.cid },
       }
     });
   };
@@ -41,7 +42,7 @@ const QACard = ({ article, onClick }) => {
   return (
     <div className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow border-l-4 border-purple-500">
       <div
-        onClick={() => onClick(article)}
+        onClick={() => {onClick(article);console.log("QACard 参数：",article)}}
         className="p-6 relative cursor-pointer"
       >
         <h3 className="text-xl font-semibold mb-2 flex items-center text-purple-700">

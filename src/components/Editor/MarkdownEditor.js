@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import MDEditor from '@uiw/react-md-editor';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -45,8 +45,9 @@ const MarkdownEditor = ({ company }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [editorMode, setEditorMode] = useState('markdown'); // 'markdown' | 'survey' | 'qa'
   const location = useLocation();
+  const categoryFromNav = useRef(false); // QACard 标志，用来标记"当前的 category 是否来自导航传参"
 
-  // 接收从 QACard 导航传来的参数（写回答）
+  // 接收从 QACard 导航传来的参数（写回答），从 location.state 接收数据
   useEffect(() => {
     if (location.state) {
       if (location.state.title) {
@@ -55,6 +56,10 @@ const MarkdownEditor = ({ company }) => {
       if (location.state.editorMode) {
         setEditorMode(location.state.editorMode);
       }
+      if (location.state.category) {
+        setCategory(location.state.category);
+        categoryFromNav.current = true;
+      }
       // 清除 state，避免刷新后重复设置
       window.history.replaceState({}, document.title);
     }
@@ -62,6 +67,10 @@ const MarkdownEditor = ({ company }) => {
 
   // 切换编辑器模式时自动设置分类
   useEffect(() => {
+    if (categoryFromNav.current) {
+      categoryFromNav.current = false; // 清除标记categoryFromNav，确保只生效一次
+      return;
+    }
     if (editorMode === 'survey') {
       setCategory({ type: 'survey', label: '薪酬' });
     } else if (editorMode === 'qa') {
