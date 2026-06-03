@@ -44,8 +44,9 @@ const MarkdownEditor = ({ company }) => {
   ]);
   const [isSaving, setIsSaving] = useState(false);
   const [editorMode, setEditorMode] = useState('markdown'); // 'markdown' | 'survey' | 'qa'
+  const [companyId, setCompanyId] = useState(''); // 通过导航传入的企业ID
   const location = useLocation();
-  const categoryFromNav = useRef(false); // QACard 标志，用来标记"当前的 category 是否来自导航传参"
+  const categoryFromNav = useRef(false);
 
   // 接收从 QACard 导航传来的参数（写回答），从 location.state 接收数据
   useEffect(() => {
@@ -59,6 +60,9 @@ const MarkdownEditor = ({ company }) => {
       if (location.state.category) {
         setCategory(location.state.category);
         categoryFromNav.current = true;
+      }
+      if (location.state.companyId) {
+        setCompanyId(location.state.companyId);
       }
       // 清除 state，避免刷新后重复设置
       window.history.replaceState({}, document.title);
@@ -176,7 +180,7 @@ const MarkdownEditor = ({ company }) => {
         tags,
         category,
         isPublic,
-        companyId: company?.id || '',
+        companyId: companyId || company?.id || '',
       });
 
       if (result.success) {

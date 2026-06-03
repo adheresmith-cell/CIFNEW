@@ -35,6 +35,7 @@ const QACard = ({ article, onClick }) => {
         title: `A:${qaTitle || article.title || article.id}`,
         editorMode: 'markdown',
         category: { type: 'ans', label: article.cid },
+        companyId: article.companyId,
       }
     });
   };
