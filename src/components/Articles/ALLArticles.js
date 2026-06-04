@@ -146,16 +146,45 @@ const ALLArticles = ({ companyId }) => {
     return false;
   };
 
+  // 判断文章是否为答案类型
+  const isAnsArticle = (article) => {
+    const cat = article.category;
+    if (typeof cat === 'object' && cat !== null) {
+      return cat.type === 'ans';
+    }
+    return false;
+  };
+
   // 过滤文章：根据搜索关键词和公司 ID 过滤
   const filteredArticles = articles.filter(article => {
     // 按搜索关键词过滤
     const matchesSearch = searchQuery === '' || (article.content && article.content.toLowerCase().includes(searchQuery.toLowerCase()));
     // 按公司 ID 精确过滤（如果传入companyId）
     const matchesCompany = !companyId || (article.companyId === companyId);
-    // 按视图模式过滤
-    const matchesMode = viewMode === 'article' ? !isQAArticle(article) : isQAArticle(article);
+    // 按视图模式过滤：article 模式显示非QA文章，qa 模式显示 QA 问题和答案
+    const matchesMode = viewMode === 'article' ? !isQAArticle(article) : (isQAArticle(article) || isAnsArticle(article));
     return matchesSearch && matchesCompany && matchesMode;
   });
+
+  // 在 QA 视图模式下，将答案按问题 ID 分组
+  const qaQuestions = viewMode === 'qa' 
+    ? filteredArticles.filter(a => isQAArticle(a))
+    : [];
+  const qaAnswers = viewMode === 'qa'
+    ? filteredArticles.filter(a => isAnsArticle(a))
+    : [];
+  
+  // 为每个问题找到对应的答案
+  const getAnswersForQuestion = (question) => {
+    const questionId = question.cid || question.id;
+    return qaAnswers.filter(a => {
+      const cat = a.category;
+      if (typeof cat === 'object' && cat !== null) {
+        return cat.label === questionId;
+      }
+      return false;
+    });
+  };
 
   // 点击文章，弹出详情弹窗
   const handleArticleClick = (article) => {
@@ -204,60 +233,71 @@ const ALLArticles = ({ companyId }) => {
         </button>
       </div>
 
-      {/* 文章列表 - 每篇文章占据一行 */}
-      <div className="grid grid-cols-1 gap-6">
-        {filteredArticles.map((article) => {
-          const isQA = isQAArticle(article);
+      {/* QA 列表 */}
+      {viewMode === 'qa' && (
+        <div className="grid grid-cols-1 gap-6">
+          {qaQuestions.map((question) => (
+            <QACard 
+              key={question.id} 
+              article={question} 
+              onClick={handleArticleClick}
+              answers={getAnswersForQuestion(question)}
+            />
+          ))}
+        </div>
+      )}
 
-          return isQA ? (
-            <QACard key={article.id} article={article} onClick={handleArticleClick} />
-          ) : (
-            // 普通文章卡片 - 保持原有样式
-            <div
-              key={article.id}
-              onClick={() => handleArticleClick(article)}
-              className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-            >
-              <div className="p-6 relative">
-                <h3 className="text-xl font-semibold mb-2 flex items-center">
-                  <FontAwesomeIcon icon={faBook} className="mr-2 text-blue-500" />
-                  文档 {article.title || article.id}
-                </h3>
-                {
-                  article.tagObject && article.tagObject.indexOf("+") !== -1 ? (
-                    <div className="absolute top-4 right-4 flex gap-2">
-                      {Object.entries(article.tagObject.split('+')).map(([key, value], index) => (
-                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
-                          {value}
+      {/* 普通文章列表 */}
+      {viewMode === 'article' && (
+        <div className="grid grid-cols-1 gap-6">
+          {filteredArticles.map((article) => (
+            !isQAArticle(article) && !isAnsArticle(article) && (
+              <div
+                key={article.id}
+                onClick={() => handleArticleClick(article)}
+                className="block bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              >
+                <div className="p-6 relative">
+                  <h3 className="text-xl font-semibold mb-2 flex items-center">
+                    <FontAwesomeIcon icon={faBook} className="mr-2 text-blue-500" />
+                    文档 {article.title || article.id}
+                  </h3>
+                  {
+                    article.tagObject && article.tagObject.indexOf("+") !== -1 ? (
+                      <div className="absolute top-4 right-4 flex gap-2">
+                        {Object.entries(article.tagObject.split('+')).map(([key, value], index) => (
+                          <span key={index} className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
+                            {value}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="absolute top-4 right-4 flex gap-2">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
+                              {article.tagObject}
                         </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="absolute top-4 right-4 flex gap-2">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
-                            {article.tagObject}
-                      </span>
-                    </div>
-                  )
-                }
-                <div className="text-gray-600 mb-4 line-clamp-3">
-                  {article.content}
-                </div>
-                <div className="flex justify-between items-center text-sm text-gray-500">
-                  <div className="flex items-center">
-                    <FontAwesomeIcon icon={faBuilding} className="mr-1" />
-                    <span>{article.category ? article.category.type : '未分类'}</span>
+                      </div>
+                    )
+                  }
+                  <div className="text-gray-600 mb-4 line-clamp-3">
+                    {article.content}
                   </div>
-                  <div className="flex items-center">
-                    <FontAwesomeIcon icon={faClock} className="mr-1" />
-                    <span>{new Date(article.timestamp).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-center text-sm text-gray-500">
+                    <div className="flex items-center">
+                      <FontAwesomeIcon icon={faBuilding} className="mr-1" />
+                      <span>{article.category ? article.category.type : '未分类'}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <FontAwesomeIcon icon={faClock} className="mr-1" />
+                      <span>{new Date(article.timestamp).toLocaleDateString()}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            )
+          ))}
+        </div>
+      )}
 
       {filteredArticles.length === 0 && (
         <div className="text-center text-gray-500 py-10">
