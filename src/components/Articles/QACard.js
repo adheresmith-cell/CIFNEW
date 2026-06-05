@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQuestionCircle, faUser, faClock, faPencilAlt } from '@fortawesome/free-solid-svg-icons';
+import { faQuestionCircle, faUser, faClock, faPencilAlt, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 const QACard = ({ article, onClick, answers = [] }) => {
+  const [showAnswers, setShowAnswers] = useState(false);
   const navigate = useNavigate();
 
   // 从 qa 文章的 content 中提取问题标题
@@ -86,34 +87,42 @@ const QACard = ({ article, onClick, answers = [] }) => {
         </button>
       </div>
 
-      {/* 答案列表 */}
+      {/* 答案列表（可折叠） */}
       {answers.length > 0 && (
-        <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-            <FontAwesomeIcon icon={faQuestionCircle} className="mr-2 text-purple-500" />
-            回答 ({answers.length})
-          </h4>
-          <div className="space-y-3">
-            {answers.map((answer) => (
-              <div key={answer.id} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center text-xs text-gray-500">
-                    <FontAwesomeIcon icon={faUser} className="mr-1" />
-                    <span>{answer.author || '匿名'}</span>
-                    <FontAwesomeIcon icon={faClock} className="ml-3 mr-1" />
-                    <span>{new Date(answer.timestamp).toLocaleDateString()}</span>
+        <div className="border-t border-gray-200">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowAnswers(!showAnswers); }}
+            className="w-full flex items-center justify-between px-6 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-sm text-gray-700 font-medium"
+          >
+            <span className="flex items-center">
+              <FontAwesomeIcon icon={faQuestionCircle} className="mr-2 text-purple-500" />
+              回答 ({answers.length})
+            </span>
+            <FontAwesomeIcon icon={showAnswers ? faChevronUp : faChevronDown} className="text-gray-400" />
+          </button>
+          {showAnswers && (
+            <div className="px-6 py-4 bg-gray-50 space-y-3">
+              {answers.map((answer) => (
+                <div key={answer.id} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <FontAwesomeIcon icon={faUser} className="mr-1" />
+                      <span>{answer.author || '匿名'}</span>
+                      <FontAwesomeIcon icon={faClock} className="ml-3 mr-1" />
+                      <span>{new Date(answer.timestamp).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-700 prose prose-sm max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                    >
+                      {answer.content}
+                    </ReactMarkdown>
                   </div>
                 </div>
-                <div className="text-sm text-gray-700 prose prose-sm max-w-none">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                  >
-                    {answer.content}
-                  </ReactMarkdown>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
