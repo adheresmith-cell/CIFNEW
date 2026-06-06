@@ -4,6 +4,17 @@
  * @param {function} onClick - 点击回调函数
  */
 function CompanyCard({ company, onClick }) {
+  // 根据名称长度动态计算字号
+  const getFontSize = (name) => {
+    const len = name?.length || 0;
+    if (len <= 2) return 'text-sm';
+    if (len <= 4) return 'text-xs';
+    if (len <= 6) return 'text-[11px]';
+    return 'text-[10px]';
+  };
+
+  const hasLogo = company.logo && typeof company.logo === 'string' && company.logo.trim() !== '';
+
   return (
     <div
       onClick={() => onClick(company)}
@@ -12,11 +23,20 @@ function CompanyCard({ company, onClick }) {
       <div className="flex gap-4">
         {/* Logo */}
         <div className="flex-shrink-0">
-          <img
-            src={null}  // company.logo
-            alt={company.name}
-            className="w-20 h-20 rounded-lg object-cover border border-gray-200 group-hover:border-primary-300 transition-colors"
-          />
+          {hasLogo ? (
+            <img
+              src={company.logo}
+              alt={company.name}
+              className="w-20 h-20 rounded-lg object-cover border border-gray-200 group-hover:border-primary-300 transition-colors"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center p-1.5 border border-gray-200 group-hover:border-primary-300 transition-colors">
+              <span className={`text-gray-900 text-center leading-tight font-medium line-clamp-3 break-all ${getFontSize(company.name)}`}>
+                {company.name}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Content */}
