@@ -16,6 +16,8 @@ import {
   faPencilAlt,
   faClipboardList,
   faQuestionCircle,
+  faUpload,
+  faDownload,
 } from '@fortawesome/free-solid-svg-icons';
 import documentService from '../../services/documentService';
 import CytoscapeTree from './CytoscapeTree';
@@ -47,6 +49,51 @@ const MarkdownEditor = ({ company }) => {
   const [companyId, setCompanyId] = useState(''); // 通过导航传入的企业ID
   const location = useLocation();
   const categoryFromNav = useRef(false);
+  const fileInputRef = useRef(null);
+
+  // 导入 JSON 文件
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        if (data.title) setTitle(data.title);
+        if (data.content) setContent(data.content);
+        if (data.tags) setTags(data.tags);
+        if (data.category) setCategory(data.category);
+        if (data.isPublic !== undefined) setIsPublic(data.isPublic);
+        showMessage('success', '文档导入成功');
+      } catch (err) {
+        showMessage('error', '导入失败：JSON 格式错误');
+      }
+    };
+    reader.readAsText(file);
+    // 重置 input 以便再次选择同一文件
+    e.target.value = '';
+  };
+
+  // 导出 JSON 文件
+  const handleExport = () => {
+    const data = {
+      title,
+      content,
+      tags,
+      category,
+      isPublic,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title || '未命名文档'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showMessage('success', '文档导出成功');
+  };
 
   // 接收从 QACard 导航传来的参数（写回答），从 location.state 接收数据
   useEffect(() => {
@@ -296,18 +343,30 @@ const MarkdownEditor = ({ company }) => {
                       </button>
                   </div>
 
+                  {/* 隐藏的文件选择器 */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".json"
+                    style={{ display: 'none' }}
+                    onChange={handleImport}
+                  />
                   <button
-                    onClick={() => setIsPublic(!isPublic)}
-                    className={`flex items-center px-3 py-1 rounded ${
-                      isPublic 
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                    onClick={() => fileInputRef.current.click()}
+                    className="flex items-center px-3 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100"
+                    title="导入 JSON 文档"
                   >
-                    <FontAwesomeIcon icon={isPublic ? faGlobe : faLock} className="mr-2" />
-                    {isPublic ? '公开' : '私有'}
+                    <FontAwesomeIcon icon={faDownload} className="mr-2" />
+                    导入
                   </button>
-
+                  <button
+                    onClick={handleExport}
+                    className="flex items-center px-3 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100"
+                    title="导出为 JSON 文档"
+                  >
+                    <FontAwesomeIcon icon={faUpload} className="mr-2" />
+                    导出
+                  </button>
                   <button
                     onClick={saveDocument}
                     disabled={isSaving}
