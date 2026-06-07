@@ -92,11 +92,20 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEdi
             {/* 公司头部：logo + 名称 + 行业 + 评分 */}
             <div className="bg-gradient-to-br from-blue-600 via-blue-600 to-cyan-500 p-6 sm:p-8 text-white">
               <div className="flex items-center gap-5">
-                <img
-                  src={company.logo}
-                  alt={company.name}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-2 border-white/30 object-cover shadow-lg flex-shrink-0"
-                />
+                {(company.logo && typeof company.logo === 'string' && company.logo.trim() !== '') ? (
+                  <img
+                    src={company.logo}
+                    alt={company.name}
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-2 border-white/30 object-cover shadow-lg flex-shrink-0"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center p-1.5 border-2 border-white/30 shadow-lg flex-shrink-0">
+                    <span className="text-gray-900 text-center leading-tight font-bold line-clamp-3 break-all text-sm">
+                      {company.name}
+                    </span>
+                  </div>
+                )}
                 <div className="min-w-0">
                   <h1 className="text-2xl sm:text-3xl font-bold mb-2 truncate">{company.name}</h1>
                   <div className="flex flex-wrap items-center gap-2 text-white/80">

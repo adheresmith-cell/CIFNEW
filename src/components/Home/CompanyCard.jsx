@@ -32,7 +32,7 @@ function CompanyCard({ company, onClick }) {
             />
           ) : (
             <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center p-1.5 border border-gray-200 group-hover:border-primary-300 transition-colors">
-              <span className={`text-gray-900 text-center leading-tight font-medium line-clamp-3 break-all ${getFontSize(company.name)}`}>
+              <span className={`text-gray-900 text-center leading-tight font-bold line-clamp-3 break-all ${getFontSize(company.name)}`}>
                 {company.name}
               </span>
             </div>
