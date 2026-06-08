@@ -51,22 +51,32 @@ const MarkdownEditor = ({ company }) => {
   const categoryFromNav = useRef(false);
   const fileInputRef = useRef(null);
 
-  // 导入 JSON 文件
+  // 导入 JSON 或 MD 文件
   const handleImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target.result);
-        if (data.title) setTitle(data.title);
-        if (data.content) setContent(data.content);
-        if (data.tags) setTags(data.tags);
-        if (data.category) setCategory(data.category);
-        if (data.isPublic !== undefined) setIsPublic(data.isPublic);
-        showMessage('success', '文档导入成功');
-      } catch (err) {
-        showMessage('error', '导入失败：JSON 格式错误');
+      const fileText = event.target.result;
+      if (file.name.endsWith('.md')) {
+        // .md 文件：直接渲染内容到 content
+        setContent(fileText);
+        showMessage('success', 'Markdown 文件导入成功');
+      } else if (file.name.endsWith('.json')) {
+        // .json 文件：解析为文档对象
+        try {
+          const data = JSON.parse(fileText);
+          if (data.title) setTitle(data.title);
+          if (data.content) setContent(data.content);
+          if (data.tags) setTags(data.tags);
+          if (data.category) setCategory(data.category);
+          if (data.isPublic !== undefined) setIsPublic(data.isPublic);
+          showMessage('success', 'JSON 文档导入成功');
+        } catch (err) {
+          showMessage('error', '导入失败：JSON 格式错误');
+        }
+      } else {
+        showMessage('error', '导入失败：仅支持 .json 和 .md 文件');
       }
     };
     reader.readAsText(file);
@@ -347,7 +357,7 @@ const MarkdownEditor = ({ company }) => {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    accept=".json"
+                    accept=".json,.md"
                     style={{ display: 'none' }}
                     onChange={handleImport}
                   />
