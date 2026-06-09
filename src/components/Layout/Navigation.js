@@ -35,12 +35,12 @@ const Navigation = () => {
           >
             <FontAwesomeIcon icon={faNewspaper} className="mr-2" /> 文章列表
           </Button>
-          <Button
+          {/* <Button
             onClick={() => { navigate('/searchtree'); }} variant="ghost"
             className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
           >
             <FontAwesomeIcon icon={faNewspaper} className="mr-2" /> 节点索引
-          </Button>
+          </Button> */}
         </div>
 
         <div className="flex items-center space-x-4">
