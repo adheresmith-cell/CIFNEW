@@ -13,6 +13,7 @@ import CompanySearchBar from './components/Home/CompanySearchBar';
 import DestinationSection from './components/Home/DestinationSection';
 import CompanyList from './components/Home/CompanyList';
 import CompanyDetail from './components/Home/CompanyDetail';
+import StandardizePage from './components/Standardization/StandardizePage';
 import { mockCompanies as initialCompanies } from './components/data/transformed_companies';
 
 
@@ -124,6 +125,7 @@ const AppRoutes = () => {
             }
           />
 
+          <Route path="/standardize" element={<StandardizePage />} />
           <Route path="/article/:id" element={<ArticleDetail />} />
           <Route path="/company/:id" element={<CompanyDetail />} />
         </Routes>

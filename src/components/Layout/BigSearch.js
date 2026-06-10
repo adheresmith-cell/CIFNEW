@@ -96,12 +96,12 @@ const BigSearch = () => {
                <FontAwesomeIcon icon={faSignInAlt} className="mr-2" /> 问答
              </Button>
              <Button
-               onClick={() => window.open('https://github.com/', '_blank')}
-               variant="ghost"
-               className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
-             >
-               <FontAwesomeIcon icon={faUserPlus} className="mr-2" /> 标准化
-             </Button>
+                onClick={() => navigate('/standardize')}
+                variant="ghost"
+                className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
+              >
+                <FontAwesomeIcon icon={faUserPlus} className="mr-2" /> 标准化
+              </Button>
             <Button
               onClick={() => window.open('https://github.com/', '_blank')}
               className="bg-emerald-500 hover:bg-emerald-600 text-white"
