@@ -20,6 +20,8 @@ import { mockCompanies as initialCompanies } from './components/data/transformed
 
 import CytoscapeTree from './components/Editor/CytoscapeTree';
 import pubsubAggregator from './services/pubsubAggregator';
+import backendClient from './services/backendClient';
+
 
 // 内部组件，确保 useNavigate 在 Router 内部使用
 const AppRoutes = () => {
@@ -137,17 +139,44 @@ const AppRoutes = () => {
 };
 
 const App = () => {
+  const [backendReady, setBackendReady] = useState(false);
+
   useEffect(() => {
     pubsubAggregator.start().catch(err => {
       console.error('PubSubAggregator 启动失败:', err);
     });
 
+    // 检测后端 Helia 服务是否就绪
+    let mounted = true;
+    const check = async () => {
+      try {
+        await backendClient.ping();
+        if (mounted) setBackendReady(true);
+      } catch {
+        // 重试
+        setTimeout(check, 2000);
+      }
+    };
+    check();
+
     return () => {
+      mounted = false;
       pubsubAggregator.stop().catch(err => {
         console.error('PubSubAggregator 停止失败:', err);
       });
     };
   }, []);
+
+  if (!backendReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="text-2xl mb-4">⏳ 正在连接后端 Helia 服务...</div>
+          <div className="text-gray-500">请确保后端已启动：node helia-server.mjs</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SearchProvider>
