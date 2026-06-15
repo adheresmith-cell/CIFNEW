@@ -9,16 +9,25 @@
 
 import express from 'express'
 import cors from 'cors'
+import { readFileSync } from 'fs'
 
 // 从前端源码导入 HeliaOrbitService 类（EVM 兼容, .mjs 不受 package.json type 影响）
 import { HeliaOrbitService } from './src/services/heliaOrbitService.js'
 
 // =========================
-// 配置
+// 从配置文件读取配置
 // =========================
-const PORT = process.env.HELIA_PORT || 3456
-const DB_NAME = process.env.DB_NAME || 'cifnew-db'
-const DB_DIR = process.env.DB_DIR || './orbitdb-data'
+let config
+try {
+  config = JSON.parse(readFileSync('./helia-config.json', 'utf-8'))
+} catch {
+  config = {}
+}
+
+const PORT = config.port || 3456
+const DB_NAME = config.dbName || 'cifnew-db'
+const DB_DIR = config.dbDir || './orbitdb-data'
+const KUBO_ADDR = config.kuboAddr || ''
 
 // =========================
 // 初始化服务
@@ -31,8 +40,13 @@ async function startServer() {
   try {
     await heliaService.connect({
       dbName: DB_NAME,
-      directory: DB_DIR
+      directory: DB_DIR,
+      kuboAddr: KUBO_ADDR || undefined
     })
+
+    if (KUBO_ADDR) {
+      console.log(`🔗 Kubo target: ${KUBO_ADDR}`)
+    }
     console.log(`✅ Helia backend ready — PeerID: ${heliaService.getPeerId()}`)
   } catch (err) {
     console.error('❌ Failed to start Helia service:', err)
