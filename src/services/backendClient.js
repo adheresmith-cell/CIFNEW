@@ -92,6 +92,33 @@ class BackendClient {
   }
 
   // =========================
+  // 公司专属 OrbitDB 操作
+  // =========================
+
+  /**
+   * 写入文档到公司专属的 OrbitDB 数据库
+   * @param {string} companyId - 公司 ID
+   * @param {Object} doc - 文档对象（必须包含 _id）
+   * @returns {Promise<{ok: boolean}>}
+   */
+  async dbCompanyPut(companyId, doc) {
+    return this._fetch(`/api/db/${encodeURIComponent(companyId)}/put`, {
+      method: 'POST',
+      body: JSON.stringify(doc),
+    })
+  }
+
+  /**
+   * 从公司专属的 OrbitDB 数据库读取文档
+   * @param {string} companyId - 公司 ID
+   * @param {string} id - 文档 ID（CID）
+   * @returns {Promise<Object|null>}
+   */
+  async dbCompanyGet(companyId, id) {
+    return this._fetch(`/api/db/${encodeURIComponent(companyId)}/get/${encodeURIComponent(id)}`)
+  }
+
+  // =========================
   // PubSub
   // =========================
 

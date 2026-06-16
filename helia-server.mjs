@@ -114,6 +114,32 @@ async function startServer() {
     }
   })
 
+  // ---------- 公司专属 OrbitDB 操作 ----------
+  app.post('/api/db/:companyId/put', async (req, res) => {
+    try {
+      const { companyId } = req.params
+      const doc = req.body
+      if (!doc || !doc._id) {
+        return res.status(400).json({ error: 'Document must have _id' })
+      }
+      await heliaService.companyPut(companyId, doc)
+      res.json({ ok: true })
+    } catch (err) {
+      console.error('/api/db/:companyId/put error:', err)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  app.get('/api/db/:companyId/get/:id', async (req, res) => {
+    try {
+      const { companyId, id } = req.params
+      const doc = await heliaService.companyGet(companyId, id)
+      res.json(doc || null)
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // ---------- PubSub ----------
   app.post('/api/pubsub/publish', async (req, res) => {
     try {

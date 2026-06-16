@@ -71,13 +71,14 @@ class HeliaOrbitService {
       }
 
       // 4. OrbitDB
+      this.dbName = options.dbName || 'example-db'
       this.orbitdb = await createOrbitDB({
         ipfs: this.helia,
         directory: options.directory || './orbitdb-data'
       })
 
       this.db = await this.orbitdb.open(
-        options.dbName || 'example-db',
+        this.dbName,
         { type: 'documents' }
       )
 
@@ -120,6 +121,31 @@ class HeliaOrbitService {
   async all() {
     if (!this.db) throw new Error('DB not ready')
     return this.db.all()
+  }
+
+  /**
+   * 写入文档到公司专属的 OrbitDB 数据库
+   * @param {string} companyId - 公司 ID
+   * @param {Object} doc - 文档对象（必须包含 _id）
+   */
+  async companyPut(companyId, doc) {
+    if (!this.orbitdb) throw new Error('OrbitDB not ready')
+    const dbName = `${this.dbName}-${companyId}`
+    const db = await this.orbitdb.open(dbName, { type: 'documents' })
+    await db.put(doc)
+  }
+
+  /**
+   * 从公司专属的 OrbitDB 数据库读取文档
+   * @param {string} companyId - 公司 ID
+   * @param {string} id - 文档 ID（CID）
+   * @returns {Promise<Object|null>}
+   */
+  async companyGet(companyId, id) {
+    if (!this.orbitdb) throw new Error('OrbitDB not ready')
+    const dbName = `${this.dbName}-${companyId}`
+    const db = await this.orbitdb.open(dbName, { type: 'documents' })
+    return db.get(id)
   }
 
   // =========================
