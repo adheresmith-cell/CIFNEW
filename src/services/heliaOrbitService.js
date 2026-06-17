@@ -148,6 +148,18 @@ class HeliaOrbitService {
     return db.get(id)
   }
 
+  /**
+   * 获取公司专属 OrbitDB 数据库的所有文档
+   * @param {string} companyId - 公司 ID
+   * @returns {Promise<Array>}
+   */
+  async companyAll(companyId) {
+    if (!this.orbitdb) throw new Error('OrbitDB not ready')
+    const dbName = `${this.dbName}-${companyId}`
+    const db = await this.orbitdb.open(dbName, { type: 'documents' })
+    return db.all()
+  }
+
   // =========================
   // PubSub（libp2p gossipsub）
   // =========================

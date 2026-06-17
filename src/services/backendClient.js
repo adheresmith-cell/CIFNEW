@@ -118,6 +118,15 @@ class BackendClient {
     return this._fetch(`/api/db/${encodeURIComponent(companyId)}/get/${encodeURIComponent(id)}`)
   }
 
+  /**
+   * 获取公司专属 OrbitDB 数据库的所有文档
+   * @param {string} companyId - 公司 ID
+   * @returns {Promise<Array>}
+   */
+  async dbCompanyAll(companyId) {
+    return this._fetch(`/api/db/${encodeURIComponent(companyId)}/all`)
+  }
+
   // =========================
   // PubSub
   // =========================

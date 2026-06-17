@@ -140,6 +140,16 @@ async function startServer() {
     }
   })
 
+  app.get('/api/db/:companyId/all', async (req, res) => {
+    try {
+      const { companyId } = req.params
+      const docs = await heliaService.companyAll(companyId)
+      res.json(docs)
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // ---------- PubSub ----------
   app.post('/api/pubsub/publish', async (req, res) => {
     try {
