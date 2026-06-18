@@ -349,18 +349,32 @@ const ipfsService = {
         console.error('⚠️ PubSub 发布 CID 失败（不影响保存）:', pubsubError.message);
       }
 
-      // 将 CID 保存到公司专属的 OrbitDB 数据库（数据库名: cifnew-db-{companyId}），以 cid 为 _id
-      if (companyId && result.cid) {
-        try {
-          await backendClient.dbCompanyPut(companyId, {
-            _id: result.cid,
-            title: title || '无标题',
-            timestamp: Date.now(),
-          });
-          console.log(`💾 CID ${result.cid} 已保存到公司 ${companyId} 的专属 OrbitDB 数据库`);
-        } catch (orbitError) {
-          console.error('⚠️ OrbitDB 保存失败（不影响 IPFS 保存）:', orbitError.message);
-        }
+      // // 将 CID 保存到公司专属的 OrbitDB 数据库（数据库名: cifnew-db-{companyId}），以 cid 为 _id
+      // if (companyId && result.cid) {
+      //   try {
+      //     await backendClient.dbCompanyPut(companyId, {
+      //       _id: result.cid,
+      //       title: title || '无标题',
+      //       timestamp: Date.now(),
+      //     });
+      //     console.log(`💾 CID ${result.cid} 已保存到公司 ${companyId} 的专属 OrbitDB 数据库`);
+      //   } catch (orbitError) {
+      //     console.error('⚠️ OrbitDB 保存失败（不影响 IPFS 保存）:', orbitError.message);
+      //   }
+      // }
+
+      // 将 CID 保存到按月组织的 OrbitDB 数据库（数据库名: cifnew-db-month-{YYYY-MM}），以 cid 为 _id
+      const month = new Date().toISOString().slice(0, 7);
+      try {
+        await backendClient.dbMonthlyPut(month, {
+          _id: result.cid,
+          title: title || '无标题',
+          companyId: companyId || '',
+          timestamp: Date.now(),
+        });
+        console.log(`📅 CID ${result.cid} 已保存到月份 ${month} 的 OrbitDB 数据库`);
+      } catch (orbitError) {
+        console.error('⚠️ 按月 OrbitDB 保存失败（不影响 IPFS 保存）:', orbitError.message);
       }
 
       return result.cid;

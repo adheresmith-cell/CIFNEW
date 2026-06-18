@@ -128,6 +128,32 @@ class BackendClient {
   }
 
   // =========================
+  // 按月 OrbitDB 操作
+  // =========================
+
+  /**
+   * 写入文档到按月组织的 OrbitDB 数据库
+   * @param {string} month - 月份，格式 YYYY-MM（如 2025-06）
+   * @param {Object} doc - 文档对象（必须包含 _id）
+   * @returns {Promise<{ok: boolean}>}
+   */
+  async dbMonthlyPut(month, doc) {
+    return this._fetch(`/api/db/month/${encodeURIComponent(month)}/put`, {
+      method: 'POST',
+      body: JSON.stringify(doc),
+    })
+  }
+
+  /**
+   * 获取指定月份的所有文档
+   * @param {string} month - 月份，格式 YYYY-MM
+   * @returns {Promise<Array>}
+   */
+  async dbMonthlyAll(month) {
+    return this._fetch(`/api/db/month/${encodeURIComponent(month)}/all`)
+  }
+
+  // =========================
   // PubSub
   // =========================
 

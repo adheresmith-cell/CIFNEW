@@ -150,6 +150,32 @@ async function startServer() {
     }
   })
 
+  // ---------- 按月 OrbitDB 操作 ----------
+  app.post('/api/db/month/:month/put', async (req, res) => {
+    try {
+      const { month } = req.params
+      const doc = req.body
+      if (!doc || !doc._id) {
+        return res.status(400).json({ error: 'Document must have _id' })
+      }
+      await heliaService.monthlyPut(month, doc)
+      res.json({ ok: true })
+    } catch (err) {
+      console.error('/api/db/month/:month/put error:', err)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  app.get('/api/db/month/:month/all', async (req, res) => {
+    try {
+      const { month } = req.params
+      const docs = await heliaService.monthlyAll(month)
+      res.json(docs)
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
   // ---------- PubSub ----------
   app.post('/api/pubsub/publish', async (req, res) => {
     try {

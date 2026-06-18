@@ -160,6 +160,30 @@ class HeliaOrbitService {
     return db.all()
   }
 
+  /**
+   * 写入文档到按月组织的 OrbitDB 数据库
+   * @param {string} month - 月份，格式 YYYY-MM（如 2025-06）
+   * @param {Object} doc - 文档对象（必须包含 _id）
+   */
+  async monthlyPut(month, doc) {
+    if (!this.orbitdb) throw new Error('OrbitDB not ready')
+    const dbName = `${this.dbName}-month-${month}`
+    const db = await this.orbitdb.open(dbName, { type: 'documents' })
+    await db.put(doc)
+  }
+
+  /**
+   * 获取指定月份的所有文档
+   * @param {string} month - 月份，格式 YYYY-MM
+   * @returns {Promise<Array>}
+   */
+  async monthlyAll(month) {
+    if (!this.orbitdb) throw new Error('OrbitDB not ready')
+    const dbName = `${this.dbName}-month-${month}`
+    const db = await this.orbitdb.open(dbName, { type: 'documents' })
+    return db.all()
+  }
+
   // =========================
   // PubSub（libp2p gossipsub）
   // =========================
