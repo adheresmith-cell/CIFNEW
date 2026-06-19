@@ -19,7 +19,7 @@ import { mockCompanies as initialCompanies } from './components/data/transformed
 
 
 import CytoscapeTree from './components/Editor/CytoscapeTree';
-import pubsubAggregator from './services/pubsubAggregator';
+// import pubsubAggregator from './services/pubsubAggregator';
 import backendClient from './services/backendClient';
 
 
@@ -142,9 +142,9 @@ const App = () => {
   const [backendReady, setBackendReady] = useState(false);
 
   useEffect(() => {
-    pubsubAggregator.start().catch(err => {
-      console.error('PubSubAggregator 启动失败:', err);
-    });
+    // pubsubAggregator.start().catch(err => {
+    //   console.error('PubSubAggregator 启动失败:', err);
+    // });
 
     // 检测后端 Helia 服务是否就绪
     let mounted = true;
@@ -161,9 +161,9 @@ const App = () => {
 
     return () => {
       mounted = false;
-      pubsubAggregator.stop().catch(err => {
-        console.error('PubSubAggregator 停止失败:', err);
-      });
+      // pubsubAggregator.stop().catch(err => {
+      //   console.error('PubSubAggregator 停止失败:', err);
+      // });
     };
   }, []);
 
