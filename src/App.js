@@ -21,6 +21,7 @@ import { mockCompanies as initialCompanies } from './components/data/transformed
 import CytoscapeTree from './components/Editor/CytoscapeTree';
 // import pubsubAggregator from './services/pubsubAggregator';
 import backendClient from './services/backendClient';
+import { syncMonthlyToIndexedDB } from './services/orbitUpdateService';
 
 
 // 内部组件，确保 useNavigate 在 Router 内部使用
@@ -78,6 +79,11 @@ const AppRoutes = () => {
 
   useEffect(() => {
     loadAndStoreData(); // 加载爬取的上市公司json数据
+
+    // 自动同步当月 OrbitDB 数据到 IndexedDB
+    syncMonthlyToIndexedDB().catch(err => {
+      console.error('OrbitDB 月度同步失败:', err);
+    });
   }, []);
 
   return (
