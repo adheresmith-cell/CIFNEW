@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import InterestRateTooltip from './InterestRateTooltip';
+import ArchiveTooltip from './ArchiveTooltip';
 import Button from '../ui/Button';
 import {  useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,6 +18,7 @@ import '../../index.css';
 const BigSearch = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showArchiveTooltip, setShowArchiveTooltip] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const { setSearchQuery, setIndustry, setCity } = useSearch();
 
@@ -55,12 +57,20 @@ const BigSearch = () => {
           {/* 左侧归档按钮 */}
           <div className="flex items-center">
             <div className={`mr-4 text-xl font-custom font-bold ${isScrolled ? 'text-black' : 'text-green'}`}> CIFNEW </div>
-            <Button
-              onClick={()=>{navigate('/');}} variant="ghost"
-              className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
-            >
-              <FontAwesomeIcon icon={faBox} className="mr-2" explain="其他可选faFileZipper，faBoxesStacked"/>归档
-            </Button>
+            <div className="relative">
+              <Button
+                onClick={() => setShowArchiveTooltip(!showArchiveTooltip)} variant="ghost"
+                className={`hover:bg-white/20 ${showArchiveTooltip ? (isScrolled ? 'bg-gray-100' : 'bg-white/20') : ''} ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
+              >
+                <FontAwesomeIcon icon={faBox} className="mr-2" explain="其他可选faFileZipper，faBoxesStacked"/>归档
+              </Button>
+              {showArchiveTooltip && (
+                <>
+                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowArchiveTooltip(false)}></div>
+                  <ArchiveTooltip />
+                </>
+              )}
+            </div>
           </div>
 
           {/* 右侧其他按钮 */}
