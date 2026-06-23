@@ -22,6 +22,7 @@ function generateRecentMonths(count = 24) {
 
 const ArchiveTooltip = () => {
   const [monthData, setMonthData] = useState({}); // { 'YYYY-MM': { count } }
+  const [loadingMonth, setLoadingMonth] = useState(null); // 当前正在加载的月份
 
   const allMonths = generateRecentMonths(24);
 
@@ -39,10 +40,12 @@ const ArchiveTooltip = () => {
   };
 
   const handleMonthClick = async (month) => {
-    // 如果已加载过则不做任何事
-    if (monthData[month.value]) return;
+    // 如果已加载过或正在加载则不做任何事
+    if (monthData[month.value] || loadingMonth === month.value) return;
+    setLoadingMonth(month.value);
     const data = await fetchMonthCount(month.value);
     setMonthData(prev => ({ ...prev, [month.value]: data }));
+    setLoadingMonth(null);
   };
 
   return (
@@ -76,8 +79,10 @@ const ArchiveTooltip = () => {
               onClick={() => handleMonthClick(month)}
             >
               <div className="flex-1 font-medium text-gray-800">{month.label}</div>
-              <div className="w-20 text-right">
-                {data ? (
+              <div className="w-20 text-right flex items-center justify-end">
+                {loadingMonth === month.value ? (
+                  <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></span>
+                ) : data ? (
                   <span className="text-blue-600 font-mono text-xs bg-blue-50 px-2 py-0.5 rounded-full">
                     {data.count} 条
                   </span>
