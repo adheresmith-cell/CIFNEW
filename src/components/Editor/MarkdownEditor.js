@@ -26,6 +26,58 @@ import QAEditor from './QAEditor';
 import { useIndexedDB } from "../../services/useIndexedDB";
 import { v4 as uuidv4 } from 'uuid';
 
+// 异步加载 Base64 图片的组件
+const AsyncBase64Image = ({ src, alt, ...props }) => {
+  const [base64Src, setBase64Src] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // 如果 src 已经是完整的 Data URI，直接使用
+    if (src && src.startsWith('data:')) {
+      setBase64Src(src);
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true; // 防止组件卸载后更新状态
+
+    const fetchImageAsBase64 = async () => {
+      if (!src) return;
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/get-base64?url=${encodeURIComponent(src)}`);
+        const data = await response.json();
+        
+        if (isMounted) {
+          setBase64Src(`data:image/png;base64,${data.base64String}`);
+        }
+      } catch (error) {
+        console.error('Base64 图片加载失败:', error);
+        if (isMounted) setBase64Src('');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchImageAsBase64();
+
+    return () => { isMounted = false; };
+  }, [src]);
+
+  if (loading) return <span style={{ padding: '8px', background: '#f0f0f0' }}>加载中...</span>;
+  if (!base64Src) return <span style={{ color: 'red' }}>图片加载失败</span>;
+
+  return (
+    <img
+      src={base64Src}
+      alt={alt}
+      style={{ maxWidth: '100%', borderRadius: '8px', cursor: 'pointer' }}
+      onClick={() => window.open(base64Src, '_blank')}
+      {...props}
+    />
+  );
+};
+
 const MarkdownEditor = ({ company }) => {
   let db = useIndexedDB(); 
 
@@ -442,6 +494,11 @@ const MarkdownEditor = ({ company }) => {
                   onChange={setContent}
                   height={500}
                   preview="edit"
+                  previewOptions={{
+                    components: {
+                      img: (props) => <AsyncBase64Image {...props} />,
+                    },
+                  }}
                 />
               ) : editorMode === 'survey' ? (
                 <SurveyEditor
