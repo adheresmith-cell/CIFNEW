@@ -180,6 +180,23 @@ class BackendClient {
     })
   }
 
+  // =========================
+  // 图片上传
+  // =========================
+
+  /**
+   * 上传图片到 IPFS
+   * @param {string} data - base64 编码的图片数据
+   * @param {string} mimeType - MIME 类型，如 image/png
+   * @returns {Promise<{cid: string}>}
+   */
+  async uploadImage(data, mimeType) {
+    return this._fetch('/api/upload-image', {
+      method: 'POST',
+      body: JSON.stringify({ data, mimeType }),
+    })
+  }
+
   /**
    * 从 topic 队列消费一条消息
    * @param {string} topic

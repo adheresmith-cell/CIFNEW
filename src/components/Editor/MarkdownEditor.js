@@ -18,11 +18,13 @@ import {
   faQuestionCircle,
   faUpload,
   faDownload,
+  faImage,
 } from '@fortawesome/free-solid-svg-icons';
 import documentService from '../../services/documentService';
 import CytoscapeTree from './CytoscapeTree';
 import SurveyEditor from './SurveyEditor';
 import QAEditor from './QAEditor';
+import ImageUploader from './ImageUploader';
 import { useIndexedDB } from "../../services/useIndexedDB";
 import { v4 as uuidv4 } from 'uuid';
 
@@ -42,21 +44,7 @@ const AsyncBase64Image = ({ src, alt, ...props }) => {
     let isMounted = true; // 防止组件卸载后更新状态
 
     const fetchImageAsBase64 = async () => {
-      if (!src) return;
       setLoading(true);
-      try {
-        const response = await fetch(`/api/get-base64?url=${encodeURIComponent(src)}`);
-        const data = await response.json();
-        
-        if (isMounted) {
-          setBase64Src(`data:image/png;base64,${data.base64String}`);
-        }
-      } catch (error) {
-        console.error('Base64 图片加载失败:', error);
-        if (isMounted) setBase64Src('');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
     };
 
     fetchImageAsBase64();
@@ -99,6 +87,7 @@ const MarkdownEditor = ({ company }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [editorMode, setEditorMode] = useState('markdown'); // 'markdown' | 'survey' | 'qa'
   const [companyId, setCompanyId] = useState(''); // 通过导航传入的企业ID
+  const [showImageUpload, setShowImageUpload] = useState(false);
   const location = useLocation();
   const categoryFromNav = useRef(false);
   const fileInputRef = useRef(null);
@@ -405,6 +394,15 @@ const MarkdownEditor = ({ company }) => {
                       </button>
                   </div>
 
+                  <button
+                    onClick={() => setShowImageUpload(true)}
+                    className="flex items-center px-3 py-1 rounded bg-green-50 text-green-600 hover:bg-green-100 mr-1"
+                    title="上传图片到 IPFS"
+                  >
+                    <FontAwesomeIcon icon={faImage} className="mr-2" />
+                    图片
+                  </button>
+
                   {/* 隐藏的文件选择器 */}
                   <input
                     type="file"
@@ -517,6 +515,18 @@ const MarkdownEditor = ({ company }) => {
           )}
         </div>
       </div>
+
+      {/* 图片上传弹窗 */}
+      {showImageUpload && (
+        <ImageUploader
+          onUploadSuccess={(cid) => {
+            const imageMarkdown = `![图片](http://localhost:3456/api/image/${cid})`;
+            setContent((prev) => (prev ? prev + '\n\n' + imageMarkdown : imageMarkdown));
+            setShowImageUpload(false);
+          }}
+          onClose={() => setShowImageUpload(false)}
+        />
+      )}
     </div>
   );
 };

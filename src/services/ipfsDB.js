@@ -4,8 +4,8 @@
  * 提供文档内容的去中心化存储与读取。
  */
 import { create } from 'kubo-rpc-client';
-import config from '../config';
-import backendClient from './backendClient';
+import config from '../config.js';
+import backendClient from './backendClient.js';
 
 class IPFSClient {
   constructor() {
@@ -108,6 +108,41 @@ class IPFSClient {
         throw new Error(`CID 不存在：${cid}`);
       }
 
+      console.error('IPFS 读取失败:', error.message);
+      throw new Error(`IPFS 读取失败：${error.message}`);
+    }
+  }
+
+  /**
+   * 从 IPFS 读取原始二进制数据（用于图片等）
+   * @param {string} cid - 内容标识符
+   * @returns {Promise<Buffer>}
+   */
+  async readRaw(cid) {
+    if (!this.connected) {
+      await this.connect();
+    }
+
+    try {
+      const chunks = [];
+      for await (const chunk of this.client.cat(cid)) {
+        chunks.push(chunk);
+      }
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const merged = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return Buffer.from(merged);
+    } catch (error) {
+      if (
+        error.message.includes('node not found') ||
+        error.message.includes('path not resolved')
+      ) {
+        throw new Error(`CID 不存在：${cid}`);
+      }
       console.error('IPFS 读取失败:', error.message);
       throw new Error(`IPFS 读取失败：${error.message}`);
     }

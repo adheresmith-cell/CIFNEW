@@ -13,6 +13,7 @@ import { readFileSync } from 'fs'
 
 // 从前端源码导入 HeliaOrbitService 类（EVM 兼容, .mjs 不受 package.json type 影响）
 import { HeliaOrbitService } from './src/services/heliaOrbitService.js'
+import { ipfsClient } from './src/services/ipfsDB.js'
 
 // =========================
 // 从配置文件读取配置
@@ -212,6 +213,51 @@ async function startServer() {
       const msg = heliaService.pubsubPop(topic)
       res.json(msg)
     } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  // ---------- 图片上传与读取 ----------
+  app.post('/api/upload-image', async (req, res) => {
+    try {
+      const { data, mimeType } = req.body
+      if (!data) {
+        return res.status(400).json({ error: 'data (base64) required' })
+      }
+      const buffer = Buffer.from(data, 'base64')
+      const result = await ipfsClient.upload(buffer)
+      const cid = result.cid
+
+      // 元数据存入 OrbitDB
+      await heliaService.put({
+        _id: cid,
+        type: 'image',
+        mimeType: mimeType || 'image/png',
+        timestamp: Date.now()
+      })
+
+      res.json({ cid })
+    } catch (err) {
+      console.error('/api/upload-image error:', err)
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  app.get('/api/image/:cid', async (req, res) => {
+    try {
+      const buffer = await ipfsClient.readRaw(req.params.cid)
+      console.log("/api/image/:cid",req.params.cid,buffer);
+      // 从 OrbitDB 查 mimeType
+      let mimeType = 'image/png'
+      try {
+        const meta = await heliaService.get(req.params.cid)
+        if (meta && meta.mimeType) mimeType = meta.mimeType
+      } catch {}
+      res.set('Content-Type', mimeType)
+      res.set('Cache-Control', 'public, max-age=31536000, immutable')
+      res.send(buffer)
+    } catch (err) {
+      console.error('/api/image/:cid error:', err)
       res.status(500).json({ error: err.message })
     }
   })
