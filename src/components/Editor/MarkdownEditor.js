@@ -44,7 +44,25 @@ const AsyncBase64Image = ({ src, alt, ...props }) => {
     let isMounted = true; // 防止组件卸载后更新状态
 
     const fetchImageAsBase64 = async () => {
+      if (!src) return;
+      console.log("MarkdownEditor img fetchImageAsBase64",src)
       setLoading(true);
+      try {
+        // const response = await fetch(`/api/get-base64?url=${encodeURIComponent(src)}`);
+        const response = await fetch(src);
+        const textData = await response.text();
+        console.log("后端实际返回的内容：", textData); 
+        // const data = await response.json();
+        // console.log("图像数据",data);
+        if (isMounted) {
+          setBase64Src(`data:image/png;base64,${textData}`);
+        }
+      } catch (error) {
+        console.error('Base64 图片加载失败:', error);
+        if (isMounted) setBase64Src('');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     };
 
     fetchImageAsBase64();

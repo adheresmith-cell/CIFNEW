@@ -247,15 +247,18 @@ async function startServer() {
     try {
       const buffer = await ipfsClient.readRaw(req.params.cid)
       console.log("/api/image/:cid",req.params.cid,buffer);
+      const base64 = buffer.toString('base64')
+      console.log(base64)
       // 从 OrbitDB 查 mimeType
       let mimeType = 'image/png'
       try {
         const meta = await heliaService.get(req.params.cid)
         if (meta && meta.mimeType) mimeType = meta.mimeType
       } catch {}
-      res.set('Content-Type', mimeType)
-      res.set('Cache-Control', 'public, max-age=31536000, immutable')
-      res.send(buffer)
+      // res.set('Content-Type', mimeType)
+      // res.set('Cache-Control', 'public, max-age=31536000, immutable')
+      // res.send(base64)
+      res.json({ data: base64, mimeType })
     } catch (err) {
       console.error('/api/image/:cid error:', err)
       res.status(500).json({ error: err.message })
