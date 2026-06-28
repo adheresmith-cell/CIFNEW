@@ -242,6 +242,22 @@ const ALLArticles = ({ companyId }) => {
               article={question} 
               onClick={handleArticleClick}
               answers={getAnswersForQuestion(question)}
+              onAnswerSubmitted={() => {
+                // 重新加载文章以获取最新的回答数据
+                console.log('回答已提交，刷新文章列表');
+                const loadArticles = async () => {
+                  try {
+                    setLoading(true);
+                    const data = await fetchMockArticles(companyId);
+                    setArticles(data);
+                  } catch (err) {
+                    console.error('刷新文章失败:', err);
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+                loadArticles();
+              }}
             />
           ))}
         </div>

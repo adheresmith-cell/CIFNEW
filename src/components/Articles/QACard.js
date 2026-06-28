@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faQuestionCircle, faUser, faClock, faPencilAlt, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { faQuestionCircle, faUser, faClock, faPencilAlt, faChevronDown, faChevronUp, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { v4 as uuidv4 } from 'uuid';
+import documentService from '../../services/documentService';
 
-const QACard = ({ article, onClick, answers = [] }) => {
+const QACard = ({ article, onClick, answers = [], onAnswerSubmitted = () => {} }) => {
   const [showAnswers, setShowAnswers] = useState(false);
-  const navigate = useNavigate();
+  const [showAnswerModal, setShowAnswerModal] = useState(false);
+  const [answerContent, setAnswerContent] = useState('');
+  const [answerAuthor, setAnswerAuthor] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState({ type: '', content: '' });
 
   // 从 qa 文章的 content 中提取问题标题
   const extractQATitle = (content) => {
@@ -33,14 +38,60 @@ const QACard = ({ article, onClick, answers = [] }) => {
 
   const handleWriteAnswer = (e) => {
     e.stopPropagation();
-    navigate('/editor', {
-      state: {
+    setAnswerContent('');
+    setAnswerAuthor('');
+    setSaveMessage({ type: '', content: '' });
+    setShowAnswerModal(true);
+  };
+
+  const handleSaveAnswer = async () => {
+    if (!answerContent.trim()) {
+      setSaveMessage({ type: 'error', content: '回答内容不能为空' });
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage({ type: '', content: '' });
+
+    try {
+      const result = await documentService.save({
+        id: uuidv4(),
         title: `A:${qaTitle || article.title || article.id}`,
-        editorMode: 'markdown',
+        content: answerContent,
+        tags: [],
         category: { type: 'ans', label: article.cid },
+        isPublic: true,
         companyId: article.companyId,
+        author: answerAuthor.trim() || '匿名',
+      });
+
+      if (result.success) {
+        setSaveMessage({ type: 'success', content: '回答提交成功！' });
+        setTimeout(() => {
+          setShowAnswerModal(false);
+          setAnswerContent('');
+          setAnswerAuthor('');
+          onAnswerSubmitted();
+        }, 1000);
+      } else {
+        setSaveMessage({ type: 'error', content: result.message || '保存失败' });
       }
-    });
+    } catch (err) {
+      console.error('保存回答失败:', err);
+      setSaveMessage({ type: 'error', content: `保存失败：${err.message || '未知错误'}` });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    if (answerContent.trim() && !window.confirm('回答尚未保存，确定要关闭吗？')) {
+      return;
+    }
+    setShowAnswerModal(false);
+    setAnswerContent('');
+    setAnswerAuthor('');
+    setSaveMessage({ type: '', content: '' });
   };
 
   return (
@@ -123,6 +174,109 @@ const QACard = ({ article, onClick, answers = [] }) => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 写回答弹窗 */}
+      {showAnswerModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) handleCloseModal(); }}
+        >
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* 弹窗头部 */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <FontAwesomeIcon icon={faPencilAlt} className="mr-2 text-purple-500" />
+                写回答
+              </h2>
+              <button
+                onClick={handleCloseModal}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+
+            {/* 弹窗内容 */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {/* 问题标题（只读提示） */}
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                <p className="text-sm text-purple-700">
+                  <span className="font-medium">回答问题：</span>
+                  {qaTitle || article.title || article.id}
+                </p>
+              </div>
+
+              {/* 作者输入 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  作者 <span className="text-gray-400">（可选）</span>
+                </label>
+                <input
+                  type="text"
+                  value={answerAuthor}
+                  onChange={(e) => setAnswerAuthor(e.target.value)}
+                  placeholder="输入作者名，留空为匿名"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                />
+              </div>
+
+              {/* 回答编辑器 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  回答内容 <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={answerContent}
+                  onChange={(e) => setAnswerContent(e.target.value)}
+                  placeholder="输入你的回答，支持 Markdown 格式..."
+                  rows={10}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-vertical font-mono"
+                />
+                <p className="mt-1 text-xs text-gray-400">支持 Markdown 格式</p>
+              </div>
+
+              {/* 保存消息 */}
+              {saveMessage.content && (
+                <div className={`p-3 rounded-lg text-sm ${
+                  saveMessage.type === 'success'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-red-100 text-red-700'
+                }`}>
+                  {saveMessage.content}
+                </div>
+              )}
+            </div>
+
+            {/* 弹窗底部按钮 */}
+            <div className="flex items-center justify-end gap-3 p-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={handleCloseModal}
+                disabled={isSaving}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSaveAnswer}
+                disabled={isSaving}
+                className="flex items-center px-4 py-2 text-sm text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-purple-400"
+              >
+                {isSaving ? (
+                  <>
+                    <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
+                    提交中...
+                  </>
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faPencilAlt} className="mr-2" />
+                    提交回答
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -48,7 +48,6 @@ const AsyncBase64Image = ({ src, alt, ...props }) => {
       console.log("MarkdownEditor img fetchImageAsBase64",src)
       setLoading(true);
       try {
-        // const response = await fetch(`/api/get-base64?url=${encodeURIComponent(src)}`);
         const response = await fetch(src);
         const textData = await response.text();
         console.log("后端实际返回的内容：", textData); 

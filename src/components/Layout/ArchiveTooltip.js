@@ -84,7 +84,7 @@ const ArchiveTooltip = () => {
                   <span className="inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></span>
                 ) : data ? (
                   <span className="text-blue-600 font-mono text-xs bg-blue-50 px-2 py-0.5 rounded-full">
-                    {data.count} 条
+                    {data.count} 条（目前为测试数据）
                   </span>
                 ) : (
                   <span className="text-gray-300 text-xs">点击加载</span>
