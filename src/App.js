@@ -22,6 +22,8 @@ import CytoscapeTree from './components/Editor/CytoscapeTree';
 // import pubsubAggregator from './services/pubsubAggregator';
 import backendClient from './services/backendClient';
 import { syncMonthlyToIndexedDB } from './services/orbitUpdateService';
+import MonthlyDbTest from './components/Test/MonthlyDbTest';
+import OrbitDbDocTest from './components/Test/OrbitDbDocTest';
 
 
 // 内部组件，确保 useNavigate 在 Router 内部使用
@@ -137,6 +139,8 @@ const AppRoutes = () => {
           <Route path="/standardize" element={<StandardizePage />} />
           <Route path="/article/:id" element={<ArticleDetail />} />
           <Route path="/company/:id" element={<CompanyDetail />} />
+          <Route path="/test/orbitdb-doc" element={<OrbitDbDocTest />} />
+          <Route path="/test/monthly-db" element={<MonthlyDbTest />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
