@@ -4,7 +4,7 @@
  */
 
 import { createHelia } from 'helia'
-import { createOrbitDB } from '@orbitdb/core'
+import { createOrbitDB , Identities, IPFSAccessController } from '@orbitdb/core'
 
 import { createLibp2p } from 'libp2p'
 import { tcp } from '@libp2p/tcp'
@@ -14,6 +14,9 @@ import { yamux } from '@chainsafe/libp2p-yamux'
 import { identify } from '@libp2p/identify'
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import { multiaddr } from '@multiformats/multiaddr'
+
+import { FsBlockstore } from 'blockstore-fs'
+import { FsDatastore } from 'datastore-fs'
 
 class HeliaOrbitService {
   constructor() {
@@ -53,8 +56,13 @@ class HeliaOrbitService {
       })
 
       // 2. Helia
+      // this.helia = await createHelia({
+      //   libp2p: this.libp2p
+      // })
       this.helia = await createHelia({
-        libp2p: this.libp2p
+        libp2p: this.libp2p,
+        datastore: new FsDatastore('./helia/datastore'),
+        blockstore: new FsBlockstore('./helia/blocks')
       })
 
       console.log('✅ Helia started:', this.libp2p.peerId.toString())
@@ -76,13 +84,19 @@ class HeliaOrbitService {
         ipfs: this.helia,
         directory: options.directory || './orbitdb-data'
       })
+      
+      //this.db = await this.orbitdb.open('my-db', { type: 'documents',AccessController: IPFSAccessController({ write: ['*'] }) })
+      this.db = await this.orbitdb.open(this.dbName, {
+        type: 'documents',
+        AccessController: IPFSAccessController({ write: ['*'] })
+      })
 
-      this.db = await this.orbitdb.open(
-        this.dbName,
-        { type: 'documents' }
-      )
 
       console.log('📦 OrbitDB ready:', this.db.address)
+      console.log(this.db.address.toString())
+      console.log(await this.db.all())
+      console.log(this.libp2p.peerId.toString())
+      console.log(this.orbitdb.identity)
 
       this.connected = true
       this.initializing = false
