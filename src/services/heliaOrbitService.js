@@ -18,6 +18,8 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { FsBlockstore } from 'blockstore-fs'
 import { FsDatastore } from 'datastore-fs'
 
+import { create } from 'kubo-rpc-client'
+
 class HeliaOrbitService {
   constructor() {
     this.libp2p = null
@@ -27,6 +29,8 @@ class HeliaOrbitService {
 
     this.connected = false
     this.initializing = false
+
+    this.kubo = null
 
     this.pubsubQueues = new Map()
     this.subscriptions = new Map()
@@ -54,6 +58,15 @@ class HeliaOrbitService {
           })
         }
       })
+
+      // Kubo RPC client (for pinning via HTTP API)
+      try {
+        const kuboUrl = options.kuboRpcUrl || 'http://127.0.0.1:5001'
+        this.kubo = create({ url: kuboUrl })
+        console.log('🔗 Kubo RPC client ready:', kuboUrl)
+      } catch (e) {
+        console.warn('⚠️ Kubo RPC init failed:', e.message)
+      }
 
       // 2. Helia
       // this.helia = await createHelia({
@@ -98,6 +111,18 @@ class HeliaOrbitService {
       console.log(this.libp2p.peerId.toString())
       console.log(this.orbitdb.identity)
 
+      // Auto pin OrbitDB manifest CID to Kubo for persistence & reprovide
+      const addrStr = this.db.address.toString()
+      const manifestCid = addrStr.split('/').pop()
+      if (this.kubo && manifestCid) {
+        try {
+          await this.kubo.pin.add(manifestCid)
+          console.log('📌 Pinned OrbitDB manifest:', manifestCid)
+        } catch (e) {
+          console.warn('⚠️ Pin manifest failed:', e.message)
+        }
+      }
+
       this.connected = true
       this.initializing = false
 
@@ -108,6 +133,28 @@ class HeliaOrbitService {
       console.error('❌ connect failed:', err)
       throw err
     }
+  }
+
+  // =========================
+  // Pin API (Kubo RPC)
+  // =========================
+
+  /**
+   * Pin a CID via Kubo RPC HTTP API
+   * @param {string} cid - Content ID to pin
+   */
+  async pinAdd(cid) {
+    if (!this.kubo) throw new Error('Kubo RPC client not ready')
+    return this.kubo.pin.add(cid)
+  }
+
+  /**
+   * Pin the current OrbitDB database's manifest CID
+   */
+  async pinDb() {
+    if (!this.kubo || !this.db) throw new Error('Not ready')
+    const cid = this.db.address.toString().split('/').pop()
+    return this.kubo.pin.add(cid)
   }
 
   // =========================
@@ -271,6 +318,7 @@ class HeliaOrbitService {
       if (this.orbitdb) await this.orbitdb.stop()
       if (this.helia) await this.helia.stop()
 
+      this.kubo = null
       this.connected = false
       this.initializing = false
 
