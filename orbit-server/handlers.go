@@ -17,13 +17,31 @@ type orbitClient interface {
 }
 
 // RegisterRoutes sets up all HTTP routes on the given mux.
-func RegisterRoutes(mux *http.ServeMux, client *Client) {
+// When mc has only one database, legacy routes (without {name}) are also
+// registered for backward compatibility.
+func RegisterRoutes(mux *http.ServeMux, mc *MultiClient) {
+	// P2P / status endpoints – no DB required
 	mux.HandleFunc("/api/ping", handlePing)
-	mux.HandleFunc("/api/p2p/status", handleP2PStatus(client))
-	mux.HandleFunc("/api/p2p/peers", handleP2PPeers(client))
-	mux.HandleFunc("/api/db/put", handleDBPut(client))
-	mux.HandleFunc("/api/db/get/", handleDBGet(client))
-	mux.HandleFunc("/api/db/all", handleDBAll(client))
+	mux.HandleFunc("/api/p2p/status", handleP2PStatus(mc))
+	mux.HandleFunc("/api/p2p/peers", handleP2PPeers(mc))
+	mux.HandleFunc("/api/dbs", handleListDBs(mc))
+
+	// Per-database CRUD routes: /api/db/{name}/...
+	mux.HandleFunc("/api/db/", handleDBNamed(mc))
+
+	// Legacy single-database routes (registered for backward compatibility
+	// when only one database exists).
+	if len(mc.Names()) == 1 {
+		// Get the single client
+		var single *Client
+		mc.ForEach(func(name string, c *Client) error {
+			single = c
+			return nil
+		})
+		mux.HandleFunc("/api/db/put", handleDBPut(single))
+		mux.HandleFunc("/api/db/get/", handleDBGet(single))
+		mux.HandleFunc("/api/db/all", handleDBAll(single))
+	}
 }
 
 // ---------- Helpers ----------
@@ -47,24 +65,29 @@ func handlePing(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func handleP2PStatus(client *Client) http.HandlerFunc {
+func handleP2PStatus(mc *MultiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		// Get peer ID via KeyAPI.Self()
-		key, err := client.IPFS().Key().Self(ctx)
+		// Use the first available client to get peer info.
+		var client *Client
+		mc.ForEach(func(name string, c *Client) error {
+			client = c
+			return nil
+		})
+
+		key, _ := client.IPFS().Key().Self(ctx)
 		peerID := ""
 		connected := false
 		peerCount := 0
 
-		if err == nil && key != nil {
+		if key != nil {
 			peerID = key.ID().String()
 			connected = true
 		}
 
-		// Get connected peers count
-		peers, err := client.IPFS().Swarm().Peers(ctx)
-		if err == nil {
+		peers, _ := client.IPFS().Swarm().Peers(ctx)
+		if peers != nil {
 			peerCount = len(peers)
 		}
 
@@ -76,25 +99,24 @@ func handleP2PStatus(client *Client) http.HandlerFunc {
 	}
 }
 
-func handleP2PPeers(client *Client) http.HandlerFunc {
+func handleP2PPeers(mc *MultiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		peers, err := client.IPFS().Swarm().Peers(ctx)
-		if err != nil {
-			writeJSON(w, http.StatusOK, map[string]interface{}{
-				"peers": []interface{}{},
-			})
-			return
-		}
+		var client *Client
+		mc.ForEach(func(name string, c *Client) error {
+			client = c
+			return nil
+		})
 
-		peerList := make([]map[string]interface{}, 0, len(peers))
+		peers, _ := client.IPFS().Swarm().Peers(ctx)
+
+		peerList := make([]map[string]interface{}, 0)
 		for _, p := range peers {
 			latencyStr := ""
 			if lat, err := p.Latency(); err == nil {
 				latencyStr = lat.String()
 			}
-
 			peerList = append(peerList, map[string]interface{}{
 				"peer":    p.ID().String(),
 				"addr":    p.Address().String(),
@@ -108,7 +130,65 @@ func handleP2PPeers(client *Client) http.HandlerFunc {
 	}
 }
 
-func handleDBPut(client *Client) http.HandlerFunc {
+// handleListDBs returns the list of available database names.
+func handleListDBs(mc *MultiClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		names := mc.Names()
+		dbInfos := make([]map[string]interface{}, 0, len(names))
+		for _, name := range names {
+			client, _ := mc.ClientByName(name)
+			dbInfos = append(dbInfos, map[string]interface{}{
+				"name": name,
+				"addr": client.DBAddr(),
+			})
+		}
+		writeJSON(w, http.StatusOK, dbInfos)
+	}
+}
+
+// handleDBNamed routes /api/db/{name}/... to the appropriate DB.
+// Supported sub-paths:
+//   /api/db/{name}/put   (POST)
+//   /api/db/{name}/get/{id} (GET)
+//   /api/db/{name}/all   (GET)
+func handleDBNamed(mc *MultiClient) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Path: /api/db/{name}/...
+		trimmed := strings.TrimPrefix(r.URL.Path, "/api/db/")
+		parts := strings.SplitN(trimmed, "/", 2)
+		if len(parts) < 2 {
+			writeError(w, http.StatusBadRequest, "missing db name and action")
+			return
+		}
+
+		dbName := parts[0]
+		action := parts[1]
+
+		client, ok := mc.ClientByName(dbName)
+		if !ok {
+			writeError(w, http.StatusNotFound, "unknown database: "+dbName)
+			return
+		}
+
+		switch {
+		case action == "put" && r.Method == http.MethodPost:
+			handleDBPut(client)(w, r)
+		case strings.HasPrefix(action, "get/"):
+			// Rewrite the request URL path for the legacy handler
+			id := strings.TrimPrefix(action, "get/")
+			r.URL.Path = "/api/db/get/" + id
+			handleDBGet(client)(w, r)
+		case action == "all" && r.Method == http.MethodGet:
+			handleDBAll(client)(w, r)
+		default:
+			writeError(w, http.StatusNotFound, "unsupported action: "+action)
+		}
+	}
+}
+
+// ---------- Legacy Handlers (single-client, used both directly and via named router) ----------
+
+func handleDBPut(client orbitClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			writeError(w, http.StatusMethodNotAllowed, "POST required")
@@ -131,7 +211,6 @@ func handleDBPut(client *Client) http.HandlerFunc {
 			return
 		}
 
-		// Extract _id as the document ID
 		id := ""
 		if v, ok := doc["_id"]; ok {
 			id, _ = v.(string)
@@ -144,9 +223,8 @@ func handleDBPut(client *Client) http.HandlerFunc {
 	}
 }
 
-func handleDBGet(client *Client) http.HandlerFunc {
+func handleDBGet(client orbitClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Extract ID from path: /api/db/get/{id}
 		id := strings.TrimPrefix(r.URL.Path, "/api/db/get/")
 		if id == "" {
 			writeError(w, http.StatusBadRequest, "id required")
@@ -168,7 +246,7 @@ func handleDBGet(client *Client) http.HandlerFunc {
 	}
 }
 
-func handleDBAll(client *Client) http.HandlerFunc {
+func handleDBAll(client orbitClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		docs, err := client.All(r.Context())
 		if err != nil {

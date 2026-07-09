@@ -27,26 +27,30 @@ func main() {
 
 	fmt.Println("🚀 Starting OrbitDB backend server...")
 	fmt.Printf("   Kubo API: %s\n", cfg.KuboAPIAddr)
-	fmt.Printf("   DB Name:  %s\n", cfg.DBName)
-	fmt.Printf("   DB Dir:   %s\n", cfg.DBDir)
+	fmt.Printf("   cfg:      %v\n", cfg)
+	fmt.Printf("   DBs:      %v\n", dbNames(cfg.DBs))
 	fmt.Printf("   Port:     %d\n", cfg.Port)
 
 	// =========================
-	// 2. Initialize OrbitDB
+	// 2. Initialize MultiClient (one Client per database)
 	// =========================
-	client, err := NewClient(context.Background(), cfg.KuboAPIAddr, cfg.DBName, cfg.DBDir)
+	mc, err := NewMultiClient(context.Background(), cfg.KuboAPIAddr, cfg.DBs)
 	if err != nil {
-		log.Fatalf("❌ Failed to create OrbitDB client: %v", err)
+		log.Fatalf("❌ Failed to create OrbitDB clients: %v", err)
 	}
-	defer client.Close()
+	defer mc.Close()
 
 	fmt.Println("✅ OrbitDB backend ready")
+	mc.ForEach(func(name string, c *Client) error {
+		fmt.Printf("   📁 DB %q → %s\n", name, c.DBAddr())
+		return nil
+	})
 
 	// =========================
 	// 3. Setup HTTP routes
 	// =========================
 	mux := http.NewServeMux()
-	RegisterRoutes(mux, client)
+	RegisterRoutes(mux, mc)
 
 	// =========================
 	// 4. Start HTTP server
@@ -73,9 +77,9 @@ func main() {
 ╔══════════════════════════════════════════╗
 ║   OrbitDB Backend Server (Go)           ║
 ║   Port: %-33d║
-║   OrbitDB: %-31s║
+║   Databases: %-29s║
 ╚══════════════════════════════════════════╝
-`, cfg.Port, cfg.DBName)
+`, cfg.Port, dbNames(cfg.DBs))
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("❌ Server error: %v", err)
@@ -98,4 +102,13 @@ func withCORS(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// dbNames extracts the database names from a DBConfig slice.
+func dbNames(dbs []DBConfig) []string {
+	names := make([]string, len(dbs))
+	for i, db := range dbs {
+		names[i] = db.Name
+	}
+	return names
 }

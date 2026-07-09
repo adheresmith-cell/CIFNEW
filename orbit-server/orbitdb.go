@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"berty.tech/go-orbit-db/accesscontroller"
 	orbitdb "berty.tech/go-orbit-db"
@@ -15,9 +17,14 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-// dbAddrFile is the filename used to persist the database address
+// dbAddrFile is the filename used to persist database addresses
 // inside the data directory, so subsequent runs can find the same DB.
+// When there are multiple databases, the file contains one "name:address" line per DB.
 const dbAddrFile = "dbaddr"
+
+// ----------------------------------------------------------------
+// Single Client (unchanged – operates one DocumentStore)
+// ----------------------------------------------------------------
 
 // Client provides a high-level API for OrbitDB document store operations,
 // similar to the JavaScript orbitdb.connect() / put() / get() / all() pattern.
@@ -31,14 +38,7 @@ type Client struct {
 	dbAddr  string
 }
 
-// NewClient creates a new Client by connecting to a local Kubo IPFS daemon
-// via its API multiaddress (e.g. "/ip4/127.0.0.1/tcp/5001").
-//
-// Parameters:
-//   - ctx: parent context
-//   - kuboMultiAddr: the multiaddress of the Kubo RPC API (e.g. "/ip4/127.0.0.1/tcp/5001")
-//   - dbName: the name of the OrbitDB document database to open/create
-//   - dir: the local directory for database storage (e.g. "./go-orbitdb-data")
+// NewClient creates a new Client by connecting to a local Kubo IPFS daemon.
 func NewClient(ctx context.Context, kuboMultiAddr string, dbName string, dir string) (*Client, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -64,23 +64,21 @@ func NewClient(ctx context.Context, kuboMultiAddr string, dbName string, dir str
 		return nil, fmt.Errorf("unable to create orbitdb: %w", err)
 	}
 
-	// 3. Check if we already have a persisted database address
-	addrFile := filepath.Join(dir, dbAddrFile)
-	persistedAddr, err := os.ReadFile(addrFile)
+	// 3. Check if we already have a persisted database address for this name
+	persistedAddr := readPersistedDBAddr(dir, dbName)
 
 	var docStore iface.DocumentStore
 
-	if err == nil && len(persistedAddr) > 0 {
+	if persistedAddr != "" {
 		// 3a. Address exists → open the existing database
-		dbAddress := string(persistedAddr)
 		var s iface.Store
-		s, err = orbitDB.Open(ctx, dbAddress, &iface.CreateDBOptions{
+		s, err = orbitDB.Open(ctx, persistedAddr, &iface.CreateDBOptions{
 			Directory: &dir,
 		})
 		if err != nil {
 			cancel()
 			orbitDB.Close()
-			return nil, fmt.Errorf("unable to open existing document store at %s: %w", dbAddress, err)
+			return nil, fmt.Errorf("unable to open existing document store at %s: %w", persistedAddr, err)
 		}
 
 		var ok bool
@@ -115,13 +113,7 @@ func NewClient(ctx context.Context, kuboMultiAddr string, dbName string, dir str
 
 		// Persist the real address so subsequent runs find the same database
 		dbAddress := docStore.Address().String()
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			cancel()
-			orbitDB.Close()
-			docStore.Close()
-			return nil, fmt.Errorf("unable to create data directory: %w", err)
-		}
-		if err := os.WriteFile(addrFile, []byte(dbAddress), 0644); err != nil {
+		if err := persistDBAddr(dir, dbName, dbAddress); err != nil {
 			cancel()
 			orbitDB.Close()
 			docStore.Close()
@@ -141,7 +133,6 @@ func NewClient(ctx context.Context, kuboMultiAddr string, dbName string, dir str
 }
 
 // Put stores a document in the database.
-// The document must be a map[string]interface{} with a "_id" string field.
 func (c *Client) Put(ctx context.Context, doc map[string]interface{}) error {
 	_, err := c.db.Put(ctx, doc)
 	if err != nil {
@@ -151,7 +142,6 @@ func (c *Client) Put(ctx context.Context, doc map[string]interface{}) error {
 }
 
 // Get retrieves a document by its _id field.
-// Returns the document or nil if not found.
 func (c *Client) Get(ctx context.Context, id string) (map[string]interface{}, error) {
 	docs, err := c.db.Get(ctx, id, nil)
 	if err != nil {
@@ -266,4 +256,177 @@ func (c *Client) IPFS() coreiface.CoreAPI {
 // OrbitDB returns the underlying OrbitDB instance.
 func (c *Client) OrbitDB() iface.OrbitDB {
 	return c.orbitDB
+}
+
+// ----------------------------------------------------------------
+// MultiClient – manages multiple named databases
+// ----------------------------------------------------------------
+
+// MultiClient manages multiple Client instances, one per database name.
+type MultiClient struct {
+	ctx     context.Context
+	cancel  context.CancelFunc
+	kuboAPI string
+	clients map[string]*Client
+}
+
+// NewMultiClient creates one Client per DBConfig entry, all sharing the
+// same Kubo API connection.
+func NewMultiClient(ctx context.Context, kuboAPIAddr string, dbs []DBConfig) (*MultiClient, error) {
+	ctx, cancel := context.WithCancel(ctx)
+
+	mc := &MultiClient{
+		ctx:     ctx,
+		cancel:  cancel,
+		kuboAPI: kuboAPIAddr,
+		clients: make(map[string]*Client, len(dbs)),
+	}
+
+	for _, db := range dbs {
+		// Ensure the directory exists
+		if err := os.MkdirAll(db.Dir, 0755); err != nil {
+			cancel()
+			mc.Close()
+			return nil, fmt.Errorf("create directory for db %q: %w", db.Name, err)
+		}
+
+		client, err := NewClient(ctx, kuboAPIAddr, db.Name, db.Dir)
+		if err != nil {
+			cancel()
+			mc.Close()
+			return nil, fmt.Errorf("create client for db %q: %w", db.Name, err)
+		}
+		mc.clients[db.Name] = client
+	}
+
+	return mc, nil
+}
+
+// ClientByName returns the Client for the given database name.
+// Returns nil and false if no database with that name exists.
+func (mc *MultiClient) ClientByName(name string) (*Client, bool) {
+	c, ok := mc.clients[name]
+	return c, ok
+}
+
+// ForEach calls fn for each database client.
+func (mc *MultiClient) ForEach(fn func(name string, c *Client) error) error {
+	for name, c := range mc.clients {
+		if err := fn(name, c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Names returns all registered database names.
+func (mc *MultiClient) Names() []string {
+	names := make([]string, 0, len(mc.clients))
+	for name := range mc.clients {
+		names = append(names, name)
+	}
+	return names
+}
+
+// Close closes all database clients.
+func (mc *MultiClient) Close() error {
+	var errs []error
+	for name, c := range mc.clients {
+		if err := c.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close client %q: %w", name, err))
+		}
+	}
+	mc.cancel()
+	if len(errs) > 0 {
+		return fmt.Errorf("multi-close errors: %v", errs)
+	}
+	return nil
+}
+
+// ----------------------------------------------------------------
+// dbaddr file helpers – multi-line format "name:address"
+// ----------------------------------------------------------------
+
+// dbAddrPath returns the path to the shared dbaddr file inside dir.
+func dbAddrPath(dir string) string {
+	return filepath.Join(dir, dbAddrFile)
+}
+
+// readPersistedDBAddr reads the dbaddr file in dir and returns the address
+// for the given dbName, or "" if not found.
+func readPersistedDBAddr(dir, dbName string) string {
+	path := dbAddrPath(dir)
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		// Try "name:address" format first
+		if idx := strings.IndexByte(line, ':'); idx > 0 {
+			name := line[:idx]
+			addr := line[idx+1:]
+			if name == dbName {
+				return addr
+			}
+		} else {
+			// Backward compatibility: single line without colon → assume
+			// it belongs to the first/only database name.
+			return line
+		}
+	}
+	return ""
+}
+
+// persistDBAddr writes (or updates) a "dbName:dbAddress" line in the dbaddr
+// file inside dir. Other entries are preserved.
+func persistDBAddr(dir, dbName, dbAddress string) error {
+	path := dbAddrPath(dir)
+
+	// Read existing lines
+	existing := make(map[string]string)
+	f, err := os.Open(path)
+	if err == nil {
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" {
+				continue
+			}
+			if idx := strings.IndexByte(line, ':'); idx > 0 {
+				name := line[:idx]
+				addr := line[idx+1:]
+				existing[name] = addr
+			}
+		}
+		f.Close()
+	}
+
+	// Upsert the current entry
+	existing[dbName] = dbAddress
+
+	// Write back all entries
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("ensure dir: %w", err)
+	}
+
+	out, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create dbaddr file: %w", err)
+	}
+	defer out.Close()
+
+	for name, addr := range existing {
+		if _, err := fmt.Fprintf(out, "%s:%s\n", name, addr); err != nil {
+			return fmt.Errorf("write dbaddr entry: %w", err)
+		}
+	}
+
+	return nil
 }
