@@ -264,33 +264,76 @@ func (c *Client) OrbitDB() iface.OrbitDB {
 
 // MultiClient manages multiple Client instances, one per database name.
 type MultiClient struct {
-	ctx     context.Context
-	cancel  context.CancelFunc
-	kuboAPI string
-	clients map[string]*Client
+	ctx       context.Context
+	cancel    context.CancelFunc
+	kuboAPI   string
+	api       coreiface.CoreAPI
+	orbitDB   iface.OrbitDB // shared OrbitDB instance across all databases
+	clients   map[string]*Client
 }
 
 // NewMultiClient creates one Client per DBConfig entry, all sharing the
-// same Kubo API connection.
+// same Kubo API connection AND the same OrbitDB instance (to avoid keystore
+// lock conflicts when databases reside in the same directory).
 func NewMultiClient(ctx context.Context, kuboAPIAddr string, dbs []DBConfig) (*MultiClient, error) {
 	ctx, cancel := context.WithCancel(ctx)
+
+	// 1. Parse the multiaddress and connect to the Kubo daemon
+	maddr, err := ma.NewMultiaddr(kuboAPIAddr)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("invalid kubo multiaddress: %w", err)
+	}
+
+	api, err := rpc.NewApi(maddr)
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("unable to connect to kubo daemon: %w", err)
+	}
+
+	// 2. Create a single shared OrbitDB instance (the first non-empty directory
+	//    is used for keystore; all DBs share it).
+	var orbitDBDir string
+	for _, db := range dbs {
+		if db.Dir != "" {
+			orbitDBDir = db.Dir
+			break
+		}
+	}
+	if orbitDBDir == "" {
+		orbitDBDir = "./orbitdb-data"
+	}
+	if err := os.MkdirAll(orbitDBDir, 0755); err != nil {
+		cancel()
+		return nil, fmt.Errorf("create orbitdb directory: %w", err)
+	}
+
+	orbitDB, err := orbitdb.NewOrbitDB(ctx, api, &orbitdb.NewOrbitDBOptions{
+		Directory: &orbitDBDir,
+	})
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("unable to create shared orbitdb instance: %w", err)
+	}
 
 	mc := &MultiClient{
 		ctx:     ctx,
 		cancel:  cancel,
 		kuboAPI: kuboAPIAddr,
+		api:     api,
+		orbitDB: orbitDB,
 		clients: make(map[string]*Client, len(dbs)),
 	}
 
+	// 3. Open (or create) one DocumentStore per database name
 	for _, db := range dbs {
-		// Ensure the directory exists
 		if err := os.MkdirAll(db.Dir, 0755); err != nil {
 			cancel()
 			mc.Close()
 			return nil, fmt.Errorf("create directory for db %q: %w", db.Name, err)
 		}
 
-		client, err := NewClient(ctx, kuboAPIAddr, db.Name, db.Dir)
+		client, err := openStore(ctx, mc, db.Name, db.Dir)
 		if err != nil {
 			cancel()
 			mc.Close()
@@ -300,6 +343,68 @@ func NewMultiClient(ctx context.Context, kuboAPIAddr string, dbs []DBConfig) (*M
 	}
 
 	return mc, nil
+}
+
+// openStore opens an existing DocumentStore or creates a new one, using the
+// shared OrbitDB instance from mc, and returns a Client wrapping it.
+func openStore(ctx context.Context, mc *MultiClient, dbName, dir string) (*Client, error) {
+	// 1. Try to find a persisted address
+	persistedAddr := readPersistedDBAddr(dir, dbName)
+
+	var docStore iface.DocumentStore
+
+	if persistedAddr != "" {
+		// 1a. Address exists → open existing
+		s, err := mc.orbitDB.Open(ctx, persistedAddr, &iface.CreateDBOptions{
+			Directory: &dir,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to open existing document store at %s: %w", persistedAddr, err)
+		}
+
+		var ok bool
+		docStore, ok = s.(iface.DocumentStore)
+		if !ok {
+			s.Close()
+			return nil, fmt.Errorf("unable to cast store to document store")
+		}
+
+		if err := docStore.Load(ctx, -1); err != nil {
+			docStore.Close()
+			return nil, fmt.Errorf("unable to load existing document store: %w", err)
+		}
+	} else {
+		// 1b. No persisted address → create new
+		access := accesscontroller.NewEmptyManifestParams()
+		access.SetType("ipfs")
+		access.SetAccess("write", []string{"*"})
+
+		var err error
+		docStore, err = mc.orbitDB.Docs(ctx, dbName, &iface.CreateDBOptions{
+			AccessController: access,
+			Directory:        &dir,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to create document store: %w", err)
+		}
+
+		// Persist the address
+		dbAddress := docStore.Address().String()
+		if err := persistDBAddr(dir, dbName, dbAddress); err != nil {
+			docStore.Close()
+			return nil, fmt.Errorf("unable to persist database address: %w", err)
+		}
+	}
+
+	return &Client{
+		ctx:     ctx,
+		cancel:  nil, // cancellation managed by MultiClient
+		api:     mc.api,
+		orbitDB: mc.orbitDB,
+		db:      docStore,
+		dbName:  dbName,
+		dbAddr:  docStore.Address().String(),
+	}, nil
 }
 
 // ClientByName returns the Client for the given database name.
@@ -328,15 +433,24 @@ func (mc *MultiClient) Names() []string {
 	return names
 }
 
-// Close closes all database clients.
+// Close closes all database stores and the shared OrbitDB instance.
 func (mc *MultiClient) Close() error {
 	var errs []error
+
+	// Close each DocumentStore (but NOT the shared OrbitDB)
 	for name, c := range mc.clients {
-		if err := c.Close(); err != nil {
-			errs = append(errs, fmt.Errorf("close client %q: %w", name, err))
+		if err := c.db.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("close store %q: %w", name, err))
 		}
 	}
+
+	// Close the shared OrbitDB instance
+	if err := mc.orbitDB.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("close shared orbitdb: %w", err))
+	}
+
 	mc.cancel()
+
 	if len(errs) > 0 {
 		return fmt.Errorf("multi-close errors: %v", errs)
 	}

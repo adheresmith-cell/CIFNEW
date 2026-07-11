@@ -1,6 +1,14 @@
 {
   "kuboApiAddr": "/ip4/127.0.0.1/tcp/5001",
   "port": 3456,
-  "dbName": "orbitdt",
-  "dbDir": "./orbitdb-data"
+  "dbs": [
+    {
+      "name": "users",
+      "dir": "./orbitdb-data"
+    },
+    {
+      "name": "orbitdt",
+      "dir": "./orbitdb-data"
+    }
+  ]
 }
