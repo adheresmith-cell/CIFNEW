@@ -154,6 +154,50 @@ class BackendClient {
   }
 
   // =========================
+  // 通用命名数据库操作（兼容多数据库场景）
+  // =========================
+
+  /**
+   * 获取服务器上可用的数据库列表
+   * @returns {Promise<string[]>}
+   */
+  async fetchDBs() {
+    return this._fetch('/api/dbs')
+  }
+
+  /**
+   * 写入文档到指定数据库
+   * @param {string} name - 数据库名称（如 users, orbitdt）
+   * @param {Object} doc - 文档对象
+   * @returns {Promise<{ok: boolean, id: string}>}
+   */
+  async dbNamedPut(name, doc) {
+    return this._fetch(`/api/db/${encodeURIComponent(name)}/put`, {
+      method: 'POST',
+      body: JSON.stringify(doc),
+    })
+  }
+
+  /**
+   * 从指定数据库读取文档
+   * @param {string} name - 数据库名称
+   * @param {string} id - 文档 ID
+   * @returns {Promise<Object|null>}
+   */
+  async dbNamedGet(name, id) {
+    return this._fetch(`/api/db/${encodeURIComponent(name)}/get/${encodeURIComponent(id)}`)
+  }
+
+  /**
+   * 获取指定数据库的所有文档
+   * @param {string} name - 数据库名称
+   * @returns {Promise<Array>}
+   */
+  async dbNamedAll(name) {
+    return this._fetch(`/api/db/${encodeURIComponent(name)}/all`)
+  }
+
+  // =========================
   // PubSub
   // =========================
 
