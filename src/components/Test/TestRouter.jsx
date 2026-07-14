@@ -11,6 +11,12 @@ const TestRouter = () => {
 
   const testPages = [
     {
+      path: '/test/orbit-server',
+      name: 'Orbit Server (Go) 综合测试',
+      description: '测试 Go 后端 orbit-server 的全部 API 端点（Ping/P2P/文档CRUD）',
+      icon: '🚀',
+    },
+    {
       path: '/test/orbitdb-doc',
       name: 'OrbitDB 文档操作测试',
       description: '测试 OrbitDB 文档的写入（PUT）和读取（GET ALL）操作',

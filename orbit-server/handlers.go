@@ -134,15 +134,7 @@ func handleP2PPeers(mc *MultiClient) http.HandlerFunc {
 func handleListDBs(mc *MultiClient) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		names := mc.Names()
-		dbInfos := make([]map[string]interface{}, 0, len(names))
-		for _, name := range names {
-			client, _ := mc.ClientByName(name)
-			dbInfos = append(dbInfos, map[string]interface{}{
-				"name": name,
-				"addr": client.DBAddr(),
-			})
-		}
-		writeJSON(w, http.StatusOK, dbInfos)
+		writeJSON(w, http.StatusOK, names)
 	}
 }
 

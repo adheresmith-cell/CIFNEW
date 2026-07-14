@@ -24,6 +24,7 @@ import backendClient from './services/backendClient';
 import { syncMonthlyToIndexedDB } from './services/orbitUpdateService';
 import MonthlyDbTest from './components/Test/MonthlyDbTest';
 import OrbitDbDocTest from './components/Test/OrbitDbDocTest';
+import OrbitServerTest from './components/Test/OrbitServerTest';
 import TestRouter from './components/Test/TestRouter';
 
 
@@ -141,6 +142,7 @@ const AppRoutes = () => {
           <Route path="/article/:id" element={<ArticleDetail />} />
           <Route path="/company/:id" element={<CompanyDetail />} />
           <Route path="/test" element={<TestRouter />} />
+          <Route path="/test/orbit-server" element={<OrbitServerTest />} />
           <Route path="/test/orbitdb-doc" element={<OrbitDbDocTest />} />
           <Route path="/test/monthly-db" element={<MonthlyDbTest />} />
           <Route path="*" element={<NotFoundPage />} />
