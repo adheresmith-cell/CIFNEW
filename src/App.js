@@ -185,8 +185,8 @@ const App = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center">
-          <div className="text-2xl mb-4">⏳ 正在连接后端 Helia 服务...</div>
-          <div className="text-gray-500">请确保后端已启动：node helia-server.mjs</div>
+          <div className="text-2xl mb-4">⏳ 正在连接后端 OrbitDB 服务...</div>
+          <div className="text-gray-500">请确保后端已启动：npm run backend</div>
         </div>
       </div>
     );

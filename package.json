@@ -52,7 +52,9 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "start:server": "node helia-server.mjs",
-    "start:ipfs": "ipfs daemon --enable-pubsub-experiment"
+    "build:backend": "cd ./orbit-server && go build -o orbit-server .",
+    "backend": "cd ./orbit-server/ && ./orbit-server",
+    "ipfs": "ipfs daemon --enable-pubsub-experiment"
   },
   "eslintConfig": {
     "extends": [

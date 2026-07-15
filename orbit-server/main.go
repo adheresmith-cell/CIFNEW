@@ -36,7 +36,8 @@ func main() {
 	// =========================
 	mc, err := NewMultiClient(context.Background(), cfg.KuboAPIAddr, cfg.DBs)
 	if err != nil {
-		log.Fatalf("❌ Failed to create OrbitDB clients: %v", err)
+		log.Fatalf("❌ Failed to create OrbitDB clients: %v,\n Need npm run ipfs first.", err)
+		log.Fatalf("❌ Failed to create OrbitDB clients: npm run ipfs")
 	}
 	defer mc.Close()
 
