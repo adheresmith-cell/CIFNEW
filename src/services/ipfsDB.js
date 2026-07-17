@@ -399,23 +399,21 @@ const ipfsService = {
       // }
 
       // 将 CID 保存到按月组织的 OrbitDB 数据库（数据库名: cifnew-db-month-{YYYY-MM}），以 cid 为 _id
+      // 此步骤为索引保存，失败应向上传播以便 UI 显示错误提示
       const month = new Date().toISOString().slice(0, 7);
-      try {
-        await backendClient.dbMonthlyPut(month, {
-          _id: result.cid,
-          title: title || '无标题',
-          companyId: companyId || '',
-          timestamp: Date.now(),
-        });
-        console.log(`📅 CID ${result.cid} 已保存到月份 ${month} 的 OrbitDB 数据库`);
-      } catch (orbitError) {
-        console.error('⚠️ 按月 OrbitDB 保存失败（不影响 IPFS 保存）:', orbitError.message);
-      }
+      console.log("month-------------\n",month);
+      await backendClient.dbMonthlyPut(month, {
+        _id: result.cid,
+        title: title || '无标题',
+        companyId: companyId || '',
+        timestamp: Date.now(),
+      });
+      console.log(`📅 CID ${result.cid} 已保存到月份 ${month} 的 OrbitDB 数据库`);
 
       return result.cid;
     } catch (error) {
       console.error('❌ IPFS 保存失败:', error.message);
-      return null; // 返回 null 而不是抛出异常，让调用方决定如何处理
+      throw error; // 向上抛出异常，让调用方（documentService）决定如何处理
     }
   },
 

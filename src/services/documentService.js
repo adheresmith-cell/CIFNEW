@@ -116,7 +116,7 @@ const documentService = {
       //   docData.title
       // );
 
-      // 4. 保存到 IPFS（内容持久化）
+      // 4. 保存到 IPFS（内容持久化 + 索引写入 OrbitDB）
       let cid = null;
       try {
         cid = await ipfsService.saveMarkdown(
@@ -135,8 +135,13 @@ const documentService = {
           // await gunService.saveCIDToIPFS(docData.id, cid);
         }
       } catch (ipfsError) {
-        // IPFS 保存失败不应阻断整体流程，只记录警告
-        console.warn('IPFS 保存失败（不影响 gunDB 存储）:', ipfsError);
+        console.error('❌ IPFS/索引保存失败:', ipfsError);
+        console.log('==========================================');
+        return {
+          success: false,
+          cid: null,
+          message: `IPFS 内容已保存失败：${ipfsError.message || '未知错误'}`,
+        };
       }
 
       // 6. 返回结果

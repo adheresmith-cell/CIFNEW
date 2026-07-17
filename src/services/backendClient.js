@@ -138,7 +138,8 @@ class BackendClient {
    * @returns {Promise<{ok: boolean}>}
    */
   async dbMonthlyPut(month, doc) {
-    return this._fetch(`/api/db/month/${encodeURIComponent(month)}/put`, {
+    console.log("----------month",month,`/api/db/${encodeURIComponent(month)}/put`);
+    return this._fetch(`/api/db/${encodeURIComponent(month)}/put`, {
       method: 'POST',
       body: JSON.stringify(doc),
     })
@@ -150,7 +151,7 @@ class BackendClient {
    * @returns {Promise<Array>}
    */
   async dbMonthlyAll(month) {
-    return this._fetch(`/api/db/month/${encodeURIComponent(month)}/all`)
+    return this._fetch(`/api/db/${encodeURIComponent(month)}/all`)
   }
 
   // =========================
