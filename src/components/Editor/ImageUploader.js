@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import backendClient from '../../services/backendClient';
+import ipfsService from '../../services/ipfsDB';
 
 const ImageUploader = ({ onUploadSuccess, onClose }) => {
   const [preview, setPreview] = useState(null);
@@ -39,7 +39,7 @@ const ImageUploader = ({ onUploadSuccess, onClose }) => {
     setError('');
 
     try {
-      const result = await backendClient.uploadImage(base64, mimeType);
+      const result = await ipfsService.uploadImage(base64, mimeType);
       onUploadSuccess(result.cid);
     } catch (err) {
       setError(`上传失败: ${err.message}`);

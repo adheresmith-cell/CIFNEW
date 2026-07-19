@@ -7,6 +7,18 @@ import { create } from 'kubo-rpc-client';
 import config from '../config.js';
 import backendClient from './backendClient.js';
 
+/**
+ * 浏览器环境下将 base64 字符串解码为 Uint8Array
+ */
+function base64ToUint8Array(base64Str) {
+  const binaryStr = atob(base64Str);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+  return bytes;
+}
+
 class IPFSClient {
   constructor() {
     this.client = null;
@@ -135,7 +147,7 @@ class IPFSClient {
         merged.set(chunk, offset);
         offset += chunk.length;
       }
-      return Buffer.from(merged);
+      return merged;
     } catch (error) {
       if (
         error.message.includes('node not found') ||
@@ -334,6 +346,53 @@ export { ipfsClient };
 // ========== 兼容现有 ipfsService 接口 ==========
 
 const ipfsService = {
+  /**
+   * 上传图片到 IPFS 并将元数据保存到 Go OrbitDB
+   * @param {string} base64Data - base64 编码的图片数据（不含 data:image/xxx;base64, 前缀）
+   * @param {string} mimeType - MIME 类型，如 image/png、image/jpeg
+   * @param {Object} [extraMeta={}] - 额外的元数据字段（如 companyId 等）
+   * @returns {Promise<{cid: string, size: number, mimeType: string}>}
+   */
+  async uploadImage(base64Data, mimeType, extraMeta = {}) {
+    console.log(`🖼️ 正在上传图片到 IPFS: ${mimeType}`);
+
+    try {
+      // 1. 将 base64 解码为 Uint8Array 并上传到 IPFS
+      const buffer = base64ToUint8Array(base64Data);
+      const result = await ipfsClient.upload(buffer);
+      const cid = result.cid;
+
+      console.log(`✅ 图片已保存到 IPFS - CID: ${cid}, 大小: ${result.size} bytes`);
+
+      // 2. 将图片元数据存入 Go OrbitDB（images 数据库）
+      const meta = {
+        _id: cid,
+        type: 'image',
+        mimeType: mimeType || 'image/png',
+        size: result.size,
+        timestamp: Date.now(),
+        ...extraMeta,
+      };
+
+      try {
+        await backendClient.dbNamedPut('images', meta);
+        console.log(`💾 图片元数据已保存到 OrbitDB images 数据库 - CID: ${cid}`);
+      } catch (orbitError) {
+        // 元数据保存失败不应阻止图片上传成功，仅记录警告
+        console.error('⚠️ OrbitDB 元数据保存失败（不影响 IPFS 上传）:', orbitError.message);
+      }
+
+      return {
+        cid,
+        size: result.size,
+        mimeType: meta.mimeType,
+      };
+    } catch (error) {
+      console.error('❌ 图片上传失败:', error.message);
+      throw new Error(`图片上传失败：${error.message}`);
+    }
+  },
+
   /**
    * 保存 Markdown 文档到 IPFS
    * @param {string} id - 文档 ID（用于日志，不作为 CID）
