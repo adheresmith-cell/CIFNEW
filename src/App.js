@@ -160,7 +160,7 @@ const App = () => {
     //   console.error('PubSubAggregator 启动失败:', err);
     // });
 
-    // 检测后端 Helia 服务是否就绪
+    // 检测后端服务是否就绪
     let mounted = true;
     const check = async () => {
       try {

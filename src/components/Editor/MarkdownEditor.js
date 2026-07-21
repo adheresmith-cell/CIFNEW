@@ -27,6 +27,7 @@ import QAEditor from './QAEditor';
 import ImageUploader from './ImageUploader';
 import { useIndexedDB } from "../../services/useIndexedDB";
 import { v4 as uuidv4 } from 'uuid';
+import { ipfsClient } from '../../services/ipfsDB';
 
 // 异步加载 Base64 图片的组件
 const AsyncBase64Image = ({ src, alt, ...props }) => {
@@ -45,16 +46,26 @@ const AsyncBase64Image = ({ src, alt, ...props }) => {
 
     const fetchImageAsBase64 = async () => {
       if (!src) return;
-      console.log("MarkdownEditor img fetchImageAsBase64",src)
+      console.log("MarkdownEditor img fetchImageAsBase64", src);
       setLoading(true);
       try {
-        const response = await fetch(src);
-        const textData = await response.text();
-        console.log("后端实际返回的内容：", textData); 
-        // const data = await response.json();
-        // console.log("图像数据",data);
+        // 从 URL 中提取 CID（src 形如 http://localhost:3456/api/image/{cid}）
+        const cid = src.split('/').pop();
+        console.log("提取的 CID:", cid);
+
+        // 直接通过 kubo-rpc-client 从 IPFS 读取原始二进制数据
+        const rawData = await ipfsClient.readRaw(cid);
+
+        // 将 Uint8Array 转为 base64
+        let binary = '';
+        const bytes = new Uint8Array(rawData);
+        for (let i = 0; i < bytes.length; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+
         if (isMounted) {
-          setBase64Src(`data:image/png;base64,${textData}`);
+          setBase64Src(`data:image/png;base64,${base64}`);
         }
       } catch (error) {
         console.error('Base64 图片加载失败:', error);
