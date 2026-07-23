@@ -27,72 +27,7 @@ import QAEditor from './QAEditor';
 import ImageUploader from './ImageUploader';
 import { useIndexedDB } from "../../services/useIndexedDB";
 import { v4 as uuidv4 } from 'uuid';
-import { ipfsClient } from '../../services/ipfsDB';
-
-// 异步加载 Base64 图片的组件
-const AsyncBase64Image = ({ src, alt, ...props }) => {
-  const [base64Src, setBase64Src] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // 如果 src 已经是完整的 Data URI，直接使用
-    if (src && src.startsWith('data:')) {
-      setBase64Src(src);
-      setLoading(false);
-      return;
-    }
-
-    let isMounted = true; // 防止组件卸载后更新状态
-
-    const fetchImageAsBase64 = async () => {
-      if (!src) return;
-      console.log("MarkdownEditor img fetchImageAsBase64", src);
-      setLoading(true);
-      try {
-        // 从 URL 中提取 CID（src 形如 http://localhost:3456/api/image/{cid}）
-        const cid = src.split('/').pop();
-        console.log("提取的 CID:", cid);
-
-        // 直接通过 kubo-rpc-client 从 IPFS 读取原始二进制数据
-        const rawData = await ipfsClient.readRaw(cid);
-
-        // 将 Uint8Array 转为 base64
-        let binary = '';
-        const bytes = new Uint8Array(rawData);
-        for (let i = 0; i < bytes.length; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        const base64 = btoa(binary);
-
-        if (isMounted) {
-          setBase64Src(`data:image/png;base64,${base64}`);
-        }
-      } catch (error) {
-        console.error('Base64 图片加载失败:', error);
-        if (isMounted) setBase64Src('');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchImageAsBase64();
-
-    return () => { isMounted = false; };
-  }, [src]);
-
-  if (loading) return <span style={{ padding: '8px', background: '#f0f0f0' }}>加载中...</span>;
-  if (!base64Src) return <span style={{ color: 'red' }}>图片加载失败</span>;
-
-  return (
-    <img
-      src={base64Src}
-      alt={alt}
-      style={{ maxWidth: '100%', borderRadius: '8px', cursor: 'pointer' }}
-      onClick={() => window.open(base64Src, '_blank')}
-      {...props}
-    />
-  );
-};
+import AsyncBase64Image from '../ui/AsyncBase64Image';
 
 const MarkdownEditor = ({ company }) => {
   let db = useIndexedDB(); 

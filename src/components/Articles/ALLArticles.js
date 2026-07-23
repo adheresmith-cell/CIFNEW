@@ -12,6 +12,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import AsyncBase64Image from '../ui/AsyncBase64Image';
 import { useSearch } from '../../context/SearchContext';
 import { fetchMockArticles } from '../data/mockArticles';
 import QACard from './QACard';
@@ -97,6 +98,9 @@ const ArticleDetailModal = ({ article, onClose }) => {
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               className="markdown-body"
+              components={{
+                img: (props) => <AsyncBase64Image {...props} />,
+              }}
             >
               {article.content}
             </ReactMarkdown>

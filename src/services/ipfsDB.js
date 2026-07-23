@@ -161,6 +161,22 @@ class IPFSClient {
   }
 
   /**
+   * 从 IPFS 读取原始二进制数据并转为 base64 数据 URI
+   * @param {string} cid - 内容标识符
+   * @param {string} [mimeType='image/png'] - MIME 类型
+   * @returns {Promise<string>} base64 数据 URI
+   */
+  async cidToBase64(cid, mimeType = 'image/png') {
+    const rawData = await this.readRaw(cid);
+    let binary = '';
+    const bytes = new Uint8Array(rawData);
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return `data:${mimeType};base64,${btoa(binary)}`;
+  }
+
+  /**
    * 检查 CID 是否存在
    * @param {string} cid
    * @returns {Promise<boolean>}
