@@ -7,7 +7,6 @@ import HappyFooter from './components/Articles/AppFooter';
 import ArticleDetail from './components/Articles/ArticleDetail';
 import { SearchProvider, useSearch } from './context/SearchContext';
 import { loadAndStoreData } from "./services/loadCompInfo";
-import HomePage from './components/Home/HomePage';
 import FlightSearchBar from './components/Home/FlightSearchBar';
 import CompanySearchBar from './components/Home/CompanySearchBar';
 import DestinationSection from './components/Home/DestinationSection';
