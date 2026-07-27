@@ -16,9 +16,14 @@ import AsyncBase64Image from '../ui/AsyncBase64Image';
 import { useSearch } from '../../context/SearchContext';
 import { fetchMockArticles } from '../data/mockArticles';
 import QACard from './QACard';
+import { useSensitiveWordFilter } from '../../services/sensitiveWordService';
 
 // ==================== 文章详情弹窗组件 ====================
 const ArticleDetailModal = ({ article, onClose }) => {
+  const { filter } = useSensitiveWordFilter();
+  const filteredTitle = filter(article.title);
+  const filteredContent = filter(article.content);
+
   // 点击遮罩背景关闭弹窗
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
@@ -47,7 +52,7 @@ const ArticleDetailModal = ({ article, onClose }) => {
         <div className="flex items-start justify-between p-6 pb-4 border-b border-gray-200">
           <div className="flex-1 min-w-0 pr-4">
             <h2 className="text-2xl font-bold text-gray-900 truncate">
-              文档 {article.title}
+              文档 {filteredTitle}
             </h2>
           </div>
           <button
@@ -102,7 +107,7 @@ const ArticleDetailModal = ({ article, onClose }) => {
                 img: (props) => <AsyncBase64Image {...props} />,
               }}
             >
-              {article.content}
+              {filteredContent}
             </ReactMarkdown>
           </div>
         </div>
