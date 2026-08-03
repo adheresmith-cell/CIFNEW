@@ -76,6 +76,9 @@ const QAEditor = ({ value, onChange, companyName = '' }) => {
 
   const [qa, setQA] = useState(() => parseContent(value || ''));
 
+  // 问题是否可用是/否回答（仅 UI 状态，不写入 Markdown）
+  const [isYesNo, setIsYesNo] = useState(false);
+
   // 同步到父组件
   useEffect(() => {
     const markdown = generateMarkdown(qa);
@@ -212,7 +215,18 @@ const QAEditor = ({ value, onChange, companyName = '' }) => {
               placeholder="请输入你的问题标题..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
-            <p className="mt-1 text-xs text-gray-400">简明扼要地描述你的问题</p>
+            <div className="mt-1 flex items-center justify-between">
+              <p className="text-xs text-gray-400">简明扼要地描述你的问题</p>
+              <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isYesNo}
+                  onChange={(e) => setIsYesNo(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-blue-500"
+                />
+                问题可用是或否回答
+              </label>
+            </div>
           </div>
         )}
       </div>
