@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
  * 提供表单化输入方式，将问题内容转为 Markdown 格式输出，
  * 适用于提问、知识问答等场景。
  */
-const QAEditor = ({ value, onChange, companyName = '' }) => {
+const QAEditor = ({ value, onChange, companyName = '', onYesNoChange }) => {
   // 解析已有 content 或初始化默认结构
   const parseContent = (content) => {
     if (!content) return getDefaultQA();
@@ -78,6 +78,12 @@ const QAEditor = ({ value, onChange, companyName = '' }) => {
 
   // 问题是否可用是/否回答（仅 UI 状态，不写入 Markdown）
   const [isYesNo, setIsYesNo] = useState(false);
+
+  // 复选框变化时通知父组件（用于设置 qa-tf 分类）
+  const handleYesNoChange = (checked) => {
+    setIsYesNo(checked);
+    onYesNoChange?.(checked);
+  };
 
   // 同步到父组件
   useEffect(() => {
@@ -221,7 +227,7 @@ const QAEditor = ({ value, onChange, companyName = '' }) => {
                 <input
                   type="checkbox"
                   checked={isYesNo}
-                  onChange={(e) => setIsYesNo(e.target.checked)}
+                  onChange={(e) => handleYesNoChange(e.target.checked)}
                   className="w-3.5 h-3.5 accent-blue-500"
                 />
                 问题可用是或否回答

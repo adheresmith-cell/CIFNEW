@@ -472,6 +472,13 @@ const MarkdownEditor = ({ company }) => {
                   value={content}
                   onChange={setContent}
                   companyName={company?.name || ''}
+                  onYesNoChange={(checked) => {
+                    if (checked) {
+                      setCategory({ type: 'qa-tf', label: '问答-TF' });
+                    } else {
+                      setCategory({ type: 'qa', label: '问答' });
+                    }
+                  }}
                 />
               )}
             </div>
