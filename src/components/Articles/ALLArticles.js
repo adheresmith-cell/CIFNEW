@@ -141,12 +141,12 @@ const ALLArticles = ({ companyId }) => {
     loadArticles();
   }, [companyId]);
 
-  // 判断文章是否为 QA 类型
+  // 判断文章是否为 QA 类型（包含普通问答与 是/否 问答）
   const isQAArticle = (article) => {
     const cat = article.category;
-    // 对象格式: { type: 'qa', ... }
+    // 对象格式: { type: 'qa', ... } 或 { type: 'qa-tf', ... }
     if (typeof cat === 'object' && cat !== null) {
-      return cat.type === 'qa';
+      return cat.type === 'qa' || cat.type === 'qa-tf';
     }
     // 字符串格式: 包含 '问答'
     if (typeof cat === 'string') {
