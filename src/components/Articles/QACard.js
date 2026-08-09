@@ -84,6 +84,34 @@ const QACard = ({ article, onClick, answers = [], onAnswerSubmitted = () => {} }
     }
   };
 
+  // 提交「是/否」快捷回答（用于 qa-tf 类型问题）
+  const handleYesNoAnswer = async (value) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const result = await documentService.save({
+        id: uuidv4(),
+        title: `A:${qaTitle || article.title || article.id}`,
+        content: value,
+        tags: [],
+        category: { type: 'ans', label: article.cid },
+        isPublic: true,
+        companyId: article.companyId,
+        author: '匿名',
+      });
+
+      if (result.success) {
+        onAnswerSubmitted();
+      } else {
+        console.error('提交是/否回答失败:', result.message);
+      }
+    } catch (err) {
+      console.error('提交是/否回答失败:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCloseModal = () => {
     if (answerContent.trim() && !window.confirm('回答尚未保存，确定要关闭吗？')) {
       return;
@@ -128,7 +156,25 @@ const QACard = ({ article, onClick, answers = [], onAnswerSubmitted = () => {} }
           </div>
         </div>
       </div>
-      <div className="px-6 pb-4">
+      <div className="px-6 pb-4 flex flex-wrap gap-2">
+        {article.category?.type === 'qa-tf' && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleYesNoAnswer('是'); }}
+              disabled={isSaving}
+              className="flex items-center px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              是
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleYesNoAnswer('否'); }}
+              disabled={isSaving}
+              className="flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              否
+            </button>
+          </>
+        )}
         <button
           onClick={handleWriteAnswer}
           className="flex items-center px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
