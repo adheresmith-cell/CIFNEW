@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQuestionCircle, faUser, faClock, faPencilAlt, faChevronDown, faChevronUp, faTimes, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
@@ -13,6 +13,10 @@ const QACard = ({ article, onClick, answers = [], onAnswerSubmitted = () => {} }
   const [answerAuthor, setAnswerAuthor] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ type: '', content: '' });
+  // 长按防误触状态
+  const pressTimerRef = useRef(null);
+  const [pressing, setPressing] = useState(null);        // 当前长按的值: '是' | '否' | null
+  const [pressProgress, setPressProgress] = useState(0); // 长按进度 0-100
 
   // 从 qa 文章的 content 中提取问题标题
   const extractQATitle = (content) => {
@@ -112,6 +116,47 @@ const QACard = ({ article, onClick, answers = [], onAnswerSubmitted = () => {} }
     }
   };
 
+  // ===== 长按防误触逻辑（是/否按钮需长按 3 秒才提交） =====
+  const PRESS_DURATION = 3000; // 3 秒
+
+  const startPressTimer = (value) => {
+    if (isSaving) return;
+    cancelPressTimer();
+    setPressing(value);
+    setPressProgress(0);
+    const startTime = Date.now();
+    pressTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min((elapsed / PRESS_DURATION) * 100, 100);
+      setPressProgress(progress);
+      if (elapsed >= PRESS_DURATION) {
+        clearInterval(pressTimerRef.current);
+        pressTimerRef.current = null;
+        setPressing(null);
+        setPressProgress(0);
+        handleYesNoAnswer(value);
+      }
+    }, 50);
+  };
+
+  const cancelPressTimer = () => {
+    if (pressTimerRef.current) {
+      clearInterval(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    setPressing(null);
+    setPressProgress(0);
+  };
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (pressTimerRef.current) {
+        clearInterval(pressTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleCloseModal = () => {
     if (answerContent.trim() && !window.confirm('回答尚未保存，确定要关闭吗？')) {
       return;
@@ -160,18 +205,52 @@ const QACard = ({ article, onClick, answers = [], onAnswerSubmitted = () => {} }
         {article.category?.type === 'qa-tf' && (
           <>
             <button
-              onClick={(e) => { e.stopPropagation(); handleYesNoAnswer('是'); }}
+              onMouseDown={(e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                startPressTimer('是');
+              }}
+              onTouchStart={(e) => { e.stopPropagation(); startPressTimer('是'); }}
+              onMouseUp={cancelPressTimer}
+              onMouseLeave={cancelPressTimer}
+              onTouchEnd={cancelPressTimer}
+              onTouchCancel={cancelPressTimer}
+              onClick={(e) => e.stopPropagation()}
               disabled={isSaving}
-              className="flex items-center px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="relative flex items-center px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 overflow-hidden select-none"
             >
-              是
+              {pressing === '是' && (
+                <span
+                  className="absolute inset-y-0 left-0 bg-white/40"
+                  style={{ width: `${pressProgress}%` }}
+                />
+              )}
+              <span className="relative">是</span>
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); handleYesNoAnswer('否'); }}
+              onMouseDown={(e) => {
+                if (e.button !== 0) return;
+                e.preventDefault();
+                e.stopPropagation();
+                startPressTimer('否');
+              }}
+              onTouchStart={(e) => { e.stopPropagation(); startPressTimer('否'); }}
+              onMouseUp={cancelPressTimer}
+              onMouseLeave={cancelPressTimer}
+              onTouchEnd={cancelPressTimer}
+              onTouchCancel={cancelPressTimer}
+              onClick={(e) => e.stopPropagation()}
               disabled={isSaving}
-              className="flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              className="relative flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 overflow-hidden select-none"
             >
-              否
+              {pressing === '否' && (
+                <span
+                  className="absolute inset-y-0 left-0 bg-white/40"
+                  style={{ width: `${pressProgress}%` }}
+                />
+              )}
+              <span className="relative">否</span>
             </button>
           </>
         )}
