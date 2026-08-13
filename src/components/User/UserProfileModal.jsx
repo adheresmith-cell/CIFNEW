@@ -22,14 +22,26 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (initialData) {
+    // 从本地存储读取已保存的用户信息（优先使用传入的 initialData）
+    let savedData = null;
+    try {
+      const stored = localStorage.getItem('userProfile');
+      if (stored) {
+        savedData = JSON.parse(stored);
+      }
+    } catch (err) {
+      console.error('读取本地用户信息失败:', err);
+    }
+
+    const baseData = initialData || savedData;
+    if (baseData) {
       setFormData({
-        name: initialData.name || '',
-        email: initialData.email || '',
-        phone: initialData.phone || '',
-        address: initialData.address || '',
-        company: initialData.company || '',
-        position: initialData.position || '',
+        name: baseData.name || '',
+        email: baseData.email || '',
+        phone: baseData.phone || '',
+        address: baseData.address || '',
+        company: baseData.company || '',
+        position: baseData.position || '',
       });
     } else {
       setFormData({
@@ -65,10 +77,18 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
     e.preventDefault();
     if (!validate()) return;
 
+    const userData = { ...formData };
+    // 保存用户信息到本地存储
+    try {
+      localStorage.setItem('userProfile', JSON.stringify(userData));
+    } catch (err) {
+      console.error('保存用户信息到本地失败:', err);
+    }
+
     const saveFn = onSave || ((data) => {
       console.log('保存用户信息:', data);
     });
-    saveFn({ ...formData });
+    saveFn(userData);
     onClose();
   };
 
