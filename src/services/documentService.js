@@ -23,6 +23,18 @@ const buildDocumentData = ({ id, title, content, tags, category, isPublic, compa
     throw new Error('文档 ID 不能为空');
   }
 
+  // 从本地存储读取已保存的用户信息作为作者
+  let author = 'anonymous';
+  try {
+    const stored = localStorage.getItem('userProfile');
+    if (stored) {
+      const profile = JSON.parse(stored);
+      author = profile.name || 'anonymous';
+    }
+  } catch (err) {
+    // 读取失败时保持默认作者
+  }
+
   return {
     id,
     title: title || '无标题',
@@ -31,7 +43,7 @@ const buildDocumentData = ({ id, title, content, tags, category, isPublic, compa
     category: category,
     isPublic: !!isPublic,
     companyId: companyId || '',
-    author: 'anonymous',
+    author,
     timestamp: Date.now(),
   };
 };
