@@ -418,9 +418,10 @@ const ipfsService = {
    * @param {string|Object} category - 分类
    * @param {string} title - 文档标题
    * @param {string} companyId - 关联的公司 ID
+   * @param {string} author - 作者姓名
    * @returns {Promise<string>} - 返回 CID
    */
-  async saveMarkdown(id, content, isPublic, tags, category, title, companyId) {
+  async saveMarkdown(id, content, isPublic, tags, category, title, companyId, author) {
     console.log(`📝 正在保存文档到 IPFS: ${title || id}`);
 
     // 构建完整的文档数据对象（含元数据）
@@ -432,6 +433,7 @@ const ipfsService = {
       tags: Array.isArray(tags) ? tags : [],
       category: category,
       companyId: companyId || '',
+      author: author || 'anonymous',
       timestamp: Date.now(),
       version: '1.0',
     });
@@ -511,6 +513,7 @@ const ipfsService = {
         tags: docData.tags,
         category: docData.category,
         companyId: docData.companyId || '',
+        author: docData.author || 'anonymous',
         timestamp: docData.timestamp,
       };
     } catch (error) {
