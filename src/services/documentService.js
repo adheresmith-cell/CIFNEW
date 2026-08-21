@@ -6,6 +6,7 @@
  */
 import gunService from './gunDB';
 import ipfsService from './ipfsDB';
+import signatureService from './signatureService';
 
 /**
  * 构建完整的文档数据对象
@@ -16,9 +17,10 @@ import ipfsService from './ipfsDB';
  * @param {Array<string>} params.tags - 标签数组
  * @param {Object} params.category - 分类对象（含 label, id）
  * @param {boolean} params.isPublic - 是否公开
+ * @param {Object} [params.owner] - 数字签名归属信息（由签名服务生成）
  * @returns {Object} 完整的文档数据
  */
-const buildDocumentData = ({ id, title, content, tags, category, isPublic, companyId }) => {
+const buildDocumentData = ({ id, title, content, tags, category, isPublic, companyId, owner }) => {
   if (!id) {
     throw new Error('文档 ID 不能为空');
   }
@@ -44,6 +46,7 @@ const buildDocumentData = ({ id, title, content, tags, category, isPublic, compa
     isPublic: !!isPublic,
     companyId: companyId || '',
     author,
+    owner: owner || null,
     timestamp: Date.now(),
   };
 };
@@ -67,6 +70,7 @@ const sanitizeDocumentList = (rawList) => {
       isPublic: !!doc.isPublic,
       companyId: doc.companyId || '',
       author: doc.author || 'anonymous',
+      owner: doc.owner || null,
       timestamp: doc.timestamp || Date.now(),
     }));
 };
@@ -117,7 +121,20 @@ const documentService = {
       // 2. 构建完整文档数据
       const docData = buildDocumentData(docParams);
       console.log('文档数据:', docData);
-      
+
+      // 2.5 生成当前用户的数字签名归属信息（owner）
+      let owner = null;
+      try {
+        owner = await signatureService.createOwner({
+          author: docData.author,
+          content: docData.content,
+          timestamp: docData.timestamp,
+        });
+        docData.owner = owner;
+      } catch (sigError) {
+        console.error('⚠️ 生成 owner 数字签名失败（不影响保存）:', sigError.message);
+      }
+
       // // 3. 保存到 gunDB（索引与元数据）
       // await gunService.saveMarkdown(
       //   docData.id,
@@ -138,7 +155,9 @@ const documentService = {
           docParams.tags || [],
           docData.category,
           docData.title,
-          docData.companyId
+          docData.companyId,
+          docData.author,
+          docData.owner
         );
         console.log('IPFS CID:', cid);
 
@@ -201,6 +220,7 @@ const documentService = {
         isPublic: doc.isPublic || false,
         companyId: doc.companyId || '',
         author: doc.author || 'anonymous',
+        owner: doc.owner || null,
         timestamp: doc.timestamp || Date.now(),
       };
     } catch (error) {
