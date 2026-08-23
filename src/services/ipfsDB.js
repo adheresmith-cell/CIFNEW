@@ -419,9 +419,10 @@ const ipfsService = {
    * @param {string} title - 文档标题
    * @param {string} companyId - 关联的公司 ID
    * @param {string} author - 作者姓名
+   * @param {Object} [owner] - 数字签名归属信息（{ publicKey, signature, algorithm, timestamp }）
    * @returns {Promise<string>} - 返回 CID
    */
-  async saveMarkdown(id, content, isPublic, tags, category, title, companyId, author) {
+  async saveMarkdown(id, content, isPublic, tags, category, title, companyId, author, owner) {
     console.log(`📝 正在保存文档到 IPFS: ${title || id}`);
 
     // 构建完整的文档数据对象（含元数据）
@@ -434,6 +435,7 @@ const ipfsService = {
       category: category,
       companyId: companyId || '',
       author: author || 'anonymous',
+      owner: owner || null,
       timestamp: Date.now(),
       version: '1.0',
     });
@@ -483,6 +485,7 @@ const ipfsService = {
         _id: result.cid,
         title: title || '无标题',
         companyId: companyId || '',
+        owner: owner || null,
         timestamp: Date.now(),
       });
       console.log(`📅 CID ${result.cid} 已保存到月份 ${month} 的 OrbitDB 数据库`);
@@ -514,6 +517,7 @@ const ipfsService = {
         category: docData.category,
         companyId: docData.companyId || '',
         author: docData.author || 'anonymous',
+        owner: docData.owner || null,
         timestamp: docData.timestamp,
       };
     } catch (error) {
