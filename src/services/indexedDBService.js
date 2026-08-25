@@ -111,6 +111,22 @@ export async function getIPFSContentByCompanyId(companyId) {
 }
 
 /**
+ * 获取所有 IPFS 内容记录
+ *
+ * @returns {Promise<Array<Object>>} 全部记录数组
+ */
+export async function getAllIPFSContent() {
+  try {
+    const db = await getDB();
+    const all = await db.getAll(STORE_NAME);
+    return all;
+  } catch (error) {
+    console.error('❌ IndexedDB 全量读取失败:', error.message);
+    return [];
+  }
+}
+
+/**
  * 检查 IndexedDB 中是否存在指定 CID
  *
  * @param {string} cid
