@@ -1,4 +1,4 @@
-import { getIPFSContentByCompanyId } from '../../services/indexedDBService';
+import { getIPFSContentByCompanyId, getAllIPFSContent } from '../../services/indexedDBService';
 
 // ==================== 虚假文章数据 ====================
 // 模拟从 /api/getallarticles/ 获取的文章数据
@@ -357,52 +357,94 @@ chore: 构建/工具
 
 // ==================== 模拟 API 请求函数 ====================
 // 模拟从 /api/getallarticles/ 获取文章
-// 支持传入 companyId，从 CIFNEW_DB.ipfsContent 中过滤对应数据
+// 支持传入 companyId，从 CIFNEW_DB.ipfsContent 中过滤对应数据；
+// 不传 companyId 时返回全部 IndexedDB 记录 + mock 文章（供「我的文档」/ /articles 页面使用）
+const mapRecordToArticle = (record) => {
+  let parsedContent = {};
+  try {
+    parsedContent = JSON.parse(record.content);
+  } catch {
+    // 如果 content 不是 JSON，直接使用
+  }
+
+  return {
+    id: record.cid,
+    title: parsedContent.title || record.title || '无标题',
+    content: parsedContent.content || record.content || '',
+    companyId: parsedContent.companyId || record.companyId || '',
+    tagObject: parsedContent.tags ? (Array.isArray(parsedContent.tags) ? parsedContent.tags.join('+') : parsedContent.tags) : '',
+    category: parsedContent.category || '',
+    timestamp: parsedContent.timestamp || record.savedAt || Date.now(),
+    author: parsedContent.author || '',
+    // 保留数字签名归属信息，便于按 owner 过滤「我的文档」
+    owner: parsedContent.owner || null,
+    // 保留原始 cid 以便后续使用
+    cid: record.cid,
+    savedAt: record.savedAt,
+  };
+};
+
 export const fetchMockArticles = (companyId) => {
   return new Promise(async (resolve) => {
     // 模拟网络延迟
     setTimeout(async () => {
       let articles = [...MOCK_ARTICLES];
 
-      // 如果传入了 companyId，从 IndexedDB 的 ipfsContent 中过滤
-      if (companyId) {
-        try {
-          const ipfsRecords = await getIPFSContentByCompanyId(companyId);
-          console.log(`fetchMockArticles - 从 IndexedDB 获取到 ${ipfsRecords.length} 条 companyId=${companyId} 的记录:`, ipfsRecords);
+      // ===== 删除标记识别（category.type === 'del'） =====
+      // 与 QA 的 category.type === 'ans' 关联机制类似：
+      // 删除标记的 label 指向被删除文章的目标 cid/id
+      const isDelMarker = (article) => {
+        const cat = article && article.category;
+        return typeof cat === 'object' && cat !== null && cat.type === 'del';
+      };
 
-          // 将 IndexedDB 记录转换为与 MOCK_ARTICLES 相同的格式
-          const ipfsArticles = ipfsRecords.map((record) => {
-            let parsedContent = {};
-            try {
-              parsedContent = JSON.parse(record.content);
-            } catch {
-              // 如果 content 不是 JSON，直接使用
-            }
+      // 删除标记本身不展示；目标 cid/id 命中 label 的文章也被过滤掉
+      const isDeletedArticle = (article, deletedTargets) => {
+        if (isDelMarker(article)) return true;
+        const key = String((article && (article.cid || article.id)) || '');
+        return key !== '' && deletedTargets.has(key);
+      };
 
-            return {
-              id: record.cid,
-              title: parsedContent.title || record.title || '无标题',
-              content: parsedContent.content || record.content || '',
-              companyId: parsedContent.companyId || record.companyId || '',
-              tagObject: parsedContent.tags ? (Array.isArray(parsedContent.tags) ? parsedContent.tags.join('+') : parsedContent.tags) : '',
-              category: parsedContent.category || '',
-              timestamp: parsedContent.timestamp || record.savedAt || Date.now(),
-              author: parsedContent.author || '',
-              // 保留原始 cid 以便后续使用
-              cid: record.cid,
-              savedAt: record.savedAt,
-            };
-          });
+      // 收集所有被删除目标（删除标记的 label 值）
+      let deletedTargets = new Set();
 
-          // 合并 IndexedDB 文章和 mock 文章（mock 文章中也过滤 companyId）
-          const mockFiltered = articles.filter(a => String(a.companyId) === String(companyId));
-          articles = [...mockFiltered, ...ipfsArticles];
-          
-          console.log(`fetchMockArticles - 总计 ${articles.length} 条文章 (mock: ${mockFiltered.length}, ipfs: ${ipfsArticles.length})`);
-        } catch (err) {
-          console.error('fetchMockArticles - 从 IndexedDB 查询失败:', err);
-          // 如果 IndexedDB 查询失败，回退到只从 mock 数据中过滤
-          articles = articles.filter(a => String(a.companyId) === String(companyId));
+      try {
+        // 传入 companyId 时按公司过滤；否则读取 IndexedDB 中的全部记录
+        const ipfsRecords = companyId
+          ? await getIPFSContentByCompanyId(companyId)
+          : await getAllIPFSContent();
+
+        console.log(`fetchMockArticles - 从 IndexedDB 获取到 ${ipfsRecords.length} 条记录:`, ipfsRecords);
+
+        // 将 IndexedDB 记录转换为与 MOCK_ARTICLES 相同的格式
+        const ipfsArticles = ipfsRecords.map(mapRecordToArticle);
+
+        // 从删除标记中收集被删除目标（label = 目标文章的 cid/id）
+        deletedTargets = new Set(
+          ipfsArticles
+            .filter(isDelMarker)
+            .map((a) => a.category && a.category.label)
+            .filter(Boolean)
+            .map(String)
+        );
+
+        if (deletedTargets.size > 0) {
+          console.log(`fetchMockArticles - 识别到 ${deletedTargets.size} 个删除标记:`, [...deletedTargets]);
+        }
+
+        // 合并 IndexedDB 文章和 mock 文章（mock 文章仅在传入了 companyId 时过滤），
+        // 并过滤掉删除标记及其目标文章
+        const mockFiltered = companyId
+          ? articles.filter((a) => String(a.companyId) === String(companyId) && !isDeletedArticle(a, deletedTargets))
+          : articles.filter((a) => !isDeletedArticle(a, deletedTargets));
+        articles = [...mockFiltered, ...ipfsArticles.filter((a) => !isDeletedArticle(a, deletedTargets))];
+
+        console.log(`fetchMockArticles - 总计 ${articles.length} 条文章 (mock: ${mockFiltered.length}, ipfs: ${ipfsArticles.length})`);
+      } catch (err) {
+        console.error('fetchMockArticles - 从 IndexedDB 查询失败:', err);
+        // 如果 IndexedDB 查询失败，回退到只从 mock 数据中过滤
+        if (companyId) {
+          articles = articles.filter((a) => String(a.companyId) === String(companyId));
         }
       }
 
