@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navigation from './components/Layout/Navigation';
 import MarkdownEditor from './components/Editor/MarkdownEditor';
 import ALLArticles from './components/Articles/ALLArticles';
+import MyDocuments from './components/Articles/MyDocuments';
 import HappyFooter from './components/Articles/AppFooter';
 import ArticleDetail from './components/Articles/ArticleDetail';
 import { SearchProvider, useSearch } from './context/SearchContext';
@@ -25,6 +26,7 @@ import MonthlyDbTest from './components/Test/MonthlyDbTest';
 import OrbitDbDocTest from './components/Test/OrbitDbDocTest';
 import OrbitServerTest from './components/Test/OrbitServerTest';
 import TestRouter from './components/Test/TestRouter';
+import CommonQAPage from './components/QA/CommonQAPage';
 
 
 // 内部组件，确保 useNavigate 在 Router 内部使用
@@ -138,6 +140,8 @@ const AppRoutes = () => {
           />
 
           <Route path="/standardize" element={<StandardizePage />} />
+          <Route path="/qa" element={<CommonQAPage />} />
+          <Route path="/articles" element={<MyDocuments />} />
           <Route path="/article/:id" element={<ArticleDetail />} />
           <Route path="/company/:id" element={<CompanyDetail />} />
           <Route path="/test" element={<TestRouter />} />

@@ -4,7 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faHome,
   faUser,
-  faNewspaper
+  faNewspaper,
+  faSignInAlt
 } from '@fortawesome/free-solid-svg-icons';
 import BigSearch from './BigSearch';
 import Button from '../ui/Button';
@@ -31,6 +32,12 @@ const Navigation = () => {
               <FontAwesomeIcon icon={faHome} className="mr-2" />首页
             </Button>
             <Button
+              onClick={() => { navigate('/qa'); }} variant="ghost"
+              className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
+            >
+              <FontAwesomeIcon icon={faSignInAlt} className="mr-2" /> 问答
+            </Button>
+                        <Button
               onClick={() => { navigate('/articles'); }} variant="ghost"
               className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
             >
