@@ -99,7 +99,7 @@ const BigSearch = () => {
             </div>
 
              <Button
-                // onClick={()=>{navigate('/editor');}} 
+                onClick={()=>{navigate('/qa');}} 
                 variant="ghost"
                 className={`hover:bg-white/20 ${isScrolled ? 'text-black hover:bg-gray-100' : 'text-white'}`}
              >

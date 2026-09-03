@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLightbulb, faPaperPlane, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faLightbulb, faPaperPlane, faSpinner, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 /**
  * 提问题弹窗 - 输入标题和问题描述
@@ -13,28 +13,52 @@ const AskQuestionModal = ({ isOpen, onClose, onSubmit }) => {
   const [title, setTitle] = useState(''); // 问题标题
   const [content, setContent] = useState(''); // 问题描述
   const [message, setMessage] = useState(null); // 提交提示 { type, content }
+  const [isSubmitting, setIsSubmitting] = useState(false); // 提交中状态
 
   if (!isOpen) return null;
 
   // 关闭并重置表单
   const handleClose = () => {
+    if (isSubmitting) return;
     setTitle('');
     setContent('');
     setMessage(null);
     onClose();
   };
 
-  // 提交提问（当前为占位逻辑，后续可通过 onSubmit 接入真实存储）
-  const handleSubmit = (e) => {
+  // 提交提问：调用 onSubmit 写入真实存储
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
       setMessage({ type: 'error', content: '请填写标题和问题描述后再提交。' });
       return;
     }
-    if (onSubmit) onSubmit({ title: title.trim(), content: content.trim() });
-    setMessage({ type: 'success', content: '提问提交成功！我们已收到你的问题，将尽快处理。' });
-    setTitle('');
-    setContent('');
+
+    // 未传入 onSubmit 时保持占位逻辑
+    if (!onSubmit) {
+      setMessage({ type: 'success', content: '提问提交成功！我们已收到你的问题，将尽快处理。' });
+      setTitle('');
+      setContent('');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const result = await onSubmit({ title: title.trim(), content: content.trim() });
+      if (result && result.success) {
+        setMessage({ type: 'success', content: '提问提交成功！我们已收到你的问题，将尽快处理。' });
+        setTitle('');
+        setContent('');
+      } else {
+        setMessage({ type: 'error', content: (result && result.message) || '提交失败，请稍后重试。' });
+      }
+    } catch (err) {
+      console.error('提交提问失败:', err);
+      setMessage({ type: 'error', content: `提交失败：${err.message || '未知错误'}` });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -106,16 +130,27 @@ const AskQuestionModal = ({ isOpen, onClose, onSubmit }) => {
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
             >
               取消
             </button>
             <button
               type="submit"
-              className="flex items-center px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+              disabled={isSubmitting}
+              className="flex items-center px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-indigo-400"
             >
-              <FontAwesomeIcon icon={faPaperPlane} className="mr-2" />
-              提交提问
+              {isSubmitting ? (
+                <>
+                  <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
+                  提交中...
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faPaperPlane} className="mr-2" />
+                  提交问题
+                </>
+              )}
             </button>
           </div>
         </form>

@@ -1,14 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faSearch,
-  faScaleBalanced,
+  faSignInAlt,
   faLightbulb,
   faChevronDown,
 } from '@fortawesome/free-solid-svg-icons';
-import { LAW_CHAPTERS, LAW_QA, getChapterName } from '../data/lawQA';
+import { LAW_QA } from '../data/QAData';
+import { LAW_CHAPTERS, getChapterName } from '../data/lawQA';
 import AskQuestionModal from './AskQuestionModal';
 import QACardItem from './QACardItem';
+import documentService from '../../services/documentService';
 
 // ==================== 主页面 ====================
 const CommonQAPage = () => {
@@ -45,6 +48,18 @@ const CommonQAPage = () => {
   const handleAskClick = () => {
     setAskMenuOpen(false);
     setAskModalOpen(true);
+  };
+
+  // 提问题弹窗提交：写入问答文章（category.type = 'qa-com'）
+  const handleAskSubmit = async ({ title, content }) => {
+    return documentService.save({
+      id: uuidv4(),
+      title: title.trim(),
+      content: content.trim(),
+      tags: [],
+      category: { type: 'qa-com', label: '问答' },
+      isPublic: true,
+    });
   };
 
   // 搜索过滤
@@ -240,7 +255,7 @@ const CommonQAPage = () => {
         {/* 底部说明 */}
         <div className="mt-10 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
           <div className="flex items-start gap-2">
-            <FontAwesomeIcon icon={faScaleBalanced} className="mt-0.5 flex-shrink-0" />
+            <FontAwesomeIcon icon={faSignInAlt} className="mt-0.5 flex-shrink-0" />
             <p>
               <span className="font-semibold">免责声明：</span>
               本页面内容为法律知识科普，基于常见生活场景编写，仅供参考，不构成正式法律意见。遇到具体法律纠纷时，请及时咨询专业律师或拨打法律热线（12348）。
@@ -253,6 +268,7 @@ const CommonQAPage = () => {
       <AskQuestionModal
         isOpen={askModalOpen}
         onClose={() => setAskModalOpen(false)}
+        onSubmit={handleAskSubmit}
       />
     </div>
   );
