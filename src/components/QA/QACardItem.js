@@ -4,16 +4,21 @@ import {
   faGavel,
   faChevronDown,
   faChevronUp,
-  faBookOpen,
-  faScaleBalanced,
   faLandmark,
   faLightbulb,
+  faComments,
+  faUser,
 } from '@fortawesome/free-solid-svg-icons';
 import { getChapterName } from '../data/lawQA';
 
 // ==================== 单条问答卡片 ====================
 const QACardItem = ({ item }) => {
   const [expanded, setExpanded] = useState(false);
+
+  // 评论区内容：优先使用 comment 数组，兼容旧版 scenario/analysis 字符串
+  const comments = Array.isArray(item.comment)
+    ? item.comment
+    : [item.scenario, item.analysis].filter(Boolean);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
@@ -49,22 +54,27 @@ const QACardItem = ({ item }) => {
       {/* 展开详情 */}
       {expanded && (
         <div className="border-t border-gray-100 px-5 py-4 space-y-4 bg-gray-50/50">
-          {/* 真实案例 */}
-          <div className="bg-white rounded-lg border border-blue-100 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FontAwesomeIcon icon={faBookOpen} className="text-blue-500" />
-              <h4 className="text-sm font-bold text-blue-700">📖 真实案例</h4>
+          {/* 评论区（comment 数组，每条字符串为一条评论，样式一致） */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <FontAwesomeIcon icon={faComments} className="text-gray-500" />
+              <h4 className="text-sm font-bold text-gray-700">评论区</h4>
             </div>
-            <p className="text-sm text-gray-700 leading-relaxed">{item.scenario}</p>
-          </div>
-
-          {/* 法律分析 */}
-          <div className="bg-white rounded-lg border border-amber-100 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FontAwesomeIcon icon={faScaleBalanced} className="text-amber-500" />
-              <h4 className="text-sm font-bold text-amber-700">🧐 法律分析</h4>
+            <div className="space-y-4">
+              {comments.map((text, idx) => (
+                <div key={idx} className="flex gap-3">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                    <FontAwesomeIcon icon={faUser} className="text-gray-500 text-sm" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="mb-1">
+                      <span className="text-sm font-semibold text-gray-800">网友</span>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{text}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <p className="text-sm text-gray-700 leading-relaxed">{item.analysis}</p>
           </div>
 
           {/* 法条知识 */}
@@ -86,11 +96,11 @@ const QACardItem = ({ item }) => {
             </div>
           </div>
 
-          {/* 维权建议 */}
+          {/* 实用建议 */}
           <div className="bg-white rounded-lg border border-purple-100 p-4">
             <div className="flex items-center gap-2 mb-2">
               <FontAwesomeIcon icon={faLightbulb} className="text-purple-500" />
-              <h4 className="text-sm font-bold text-purple-700">💡 维权建议</h4>
+              <h4 className="text-sm font-bold text-purple-700">💡 实用建议</h4>
             </div>
             <p className="text-sm text-gray-700 leading-relaxed">{item.suggestion}</p>
           </div>

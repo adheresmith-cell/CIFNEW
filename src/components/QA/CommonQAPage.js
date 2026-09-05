@@ -66,11 +66,19 @@ const CommonQAPage = () => {
   const filteredAll = useMemo(() => {
     if (!searchKeyword.trim()) return [];
     const kw = searchKeyword.trim().toLowerCase();
+
+    // 匹配 comment 数组（兼容旧版 scenario/analysis 字符串）
+    const commentMatch = (qa) => {
+      const comments = Array.isArray(qa.comment)
+        ? qa.comment
+        : [qa.scenario, qa.analysis];
+      return comments.some(c => (c || '').toLowerCase().includes(kw));
+    };
+
     return LAW_QA.filter(qa => {
       return (
         qa.question.toLowerCase().includes(kw) ||
-        qa.scenario.toLowerCase().includes(kw) ||
-        qa.analysis.toLowerCase().includes(kw) ||
+        commentMatch(qa) ||
         qa.suggestion.toLowerCase().includes(kw) ||
         qa.laws.some(law =>
           law.name.toLowerCase().includes(kw) ||
