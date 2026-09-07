@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faLightbulb, faPaperPlane, faSpinner, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { LAW_CHAPTERS } from '../data/lawQA';
 
 /**
- * 提问题弹窗 - 输入标题和问题描述
+ * 提问题弹窗 - 选择所属分区，输入标题和问题描述
  *
  * @param {boolean} isOpen - 是否显示
  * @param {function} onClose - 关闭回调
- * @param {function} onSubmit - 提交回调（可选），参数为 { title, content }
+ * @param {function} onSubmit - 提交回调（可选），参数为 { title, content, chapter }
  */
 const AskQuestionModal = ({ isOpen, onClose, onSubmit }) => {
   const [title, setTitle] = useState(''); // 问题标题
   const [content, setContent] = useState(''); // 问题描述
+  const [chapter, setChapter] = useState(LAW_CHAPTERS[0].name); // 所属分区（默认第一个分区）
   const [message, setMessage] = useState(null); // 提交提示 { type, content }
   const [isSubmitting, setIsSubmitting] = useState(false); // 提交中状态
 
@@ -22,6 +24,7 @@ const AskQuestionModal = ({ isOpen, onClose, onSubmit }) => {
     if (isSubmitting) return;
     setTitle('');
     setContent('');
+    setChapter(LAW_CHAPTERS[0].name);
     setMessage(null);
     onClose();
   };
@@ -45,7 +48,7 @@ const AskQuestionModal = ({ isOpen, onClose, onSubmit }) => {
     setIsSubmitting(true);
     setMessage(null);
     try {
-      const result = await onSubmit({ title: title.trim(), content: content.trim() });
+      const result = await onSubmit({ title: title.trim(), content: content.trim(), chapter });
       if (result && result.success) {
         setMessage({ type: 'success', content: '提问提交成功！我们已收到你的问题，将尽快处理。' });
         setTitle('');
@@ -85,6 +88,24 @@ const AskQuestionModal = ({ isOpen, onClose, onSubmit }) => {
         {/* 弹窗内容 */}
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {/* 所属分区 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                所属分区 <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={chapter}
+                onChange={(e) => setChapter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm bg-white"
+              >
+                {LAW_CHAPTERS.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.icon} {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* 标题 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

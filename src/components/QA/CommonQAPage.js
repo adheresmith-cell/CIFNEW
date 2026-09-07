@@ -7,8 +7,9 @@ import {
   faLightbulb,
   faChevronDown,
 } from '@fortawesome/free-solid-svg-icons';
-import { LAW_QA } from '../data/QAData';
-import { LAW_CHAPTERS, getChapterName } from '../data/lawQA';
+import { LAW_QA_QUESTIONS, LAW_QA_ANSWERS, LAW_QA_SUGGESTIONS } from '../data/QAData';
+import { LAW_CHAPTERS, getChapterName, getQuestionChapterId, getRelatedForQuestion } from '../data/lawQA';
+import { fetchMockArticles } from '../data/mockArticles';
 import AskQuestionModal from './AskQuestionModal';
 import QACardItem from './QACardItem';
 import documentService from '../../services/documentService';
@@ -50,58 +51,93 @@ const CommonQAPage = () => {
     setAskModalOpen(true);
   };
 
-  // 提问题弹窗提交：写入问答文章（category.type = 'qa-com'）
-  const handleAskSubmit = async ({ title, content }) => {
-    return documentService.save({
+  // 动态问答（用户提交的 qa-com 问题 + 通过 cid 关联的回答/建议，存于 IndexedDB/IPFS）
+  const [dynamicQA, setDynamicQA] = useState({ questions: [], answers: [], suggestions: [] });
+  const [qaLoading, setQaLoading] = useState(true);
+
+  // 从 fetchMockArticles（IndexedDB + mock）中筛出问答相关文章
+  const loadDynamicQA = async () => {
+    setQaLoading(true);
+    try {
+      const articles = await fetchMockArticles();
+      const catType = (a) => (a && a.category && typeof a.category === 'object' ? a.category.type : null);
+      setDynamicQA({
+        questions: articles.filter((a) => catType(a) === 'qa-com'),
+        answers: articles.filter((a) => catType(a) === 'ans'),
+        suggestions: articles.filter((a) => catType(a) === 'sug'),
+      });
+    } catch (err) {
+      console.error('CommonQAPage - 加载用户提问失败:', err);
+    } finally {
+      setQaLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDynamicQA();
+  }, []);
+
+  // 提问题弹窗提交：写入问答文章（category.type = 'qa-com'，tags 记录所属分区），成功后刷新列表
+  const handleAskSubmit = async ({ title, content, chapter }) => {
+    const result = await documentService.save({
       id: uuidv4(),
       title: title.trim(),
       content: content.trim(),
-      tags: [],
+      tags: chapter ? [chapter] : [],
       category: { type: 'qa-com', label: '问答' },
       isPublic: true,
     });
+    if (result && result.success) {
+      await loadDynamicQA();
+    }
+    return result;
   };
 
-  // 搜索过滤
+  // 合并静态问题与用户动态提问（qa-com）
+  const allQuestions = useMemo(
+    () => [...LAW_QA_QUESTIONS, ...dynamicQA.questions],
+    [dynamicQA.questions]
+  );
+  // 回答/建议池：静态 LAW_QA_ANSWERS/LAW_QA_SUGGESTIONS + 动态 ans/sug 文章，均通过 category.label 链接问题 cid
+  const answerPool = useMemo(() => [...LAW_QA_ANSWERS, ...dynamicQA.answers], [dynamicQA.answers]);
+  const suggestionPool = useMemo(
+    () => [...LAW_QA_SUGGESTIONS, ...dynamicQA.suggestions],
+    [dynamicQA.suggestions]
+  );
+
+  // 搜索过滤：匹配问题本身，以及通过 cid 关联的回答与建议
   const filteredAll = useMemo(() => {
     if (!searchKeyword.trim()) return [];
     const kw = searchKeyword.trim().toLowerCase();
 
-    // 匹配 comment 数组（兼容旧版 scenario/analysis 字符串）
-    const commentMatch = (qa) => {
-      const comments = Array.isArray(qa.comment)
-        ? qa.comment
-        : [qa.scenario, qa.analysis];
-      return comments.some(c => (c || '').toLowerCase().includes(kw));
-    };
-
-    return LAW_QA.filter(qa => {
+    return allQuestions.filter(qa => {
+      const { answers, suggestions } = getRelatedForQuestion(qa, {
+        answers: answerPool,
+        suggestions: suggestionPool,
+      });
       return (
-        qa.question.toLowerCase().includes(kw) ||
-        commentMatch(qa) ||
-        qa.suggestion.toLowerCase().includes(kw) ||
-        qa.laws.some(law =>
-          law.name.toLowerCase().includes(kw) ||
-          law.summary.toLowerCase().includes(kw)
-        )
+        (qa.question || qa.title || '').toLowerCase().includes(kw) ||
+        answers.some(a => (a.content || '').toLowerCase().includes(kw)) ||
+        suggestions.some(s => (s.content || '').toLowerCase().includes(kw))
       );
     });
-  }, [searchKeyword]);
+  }, [searchKeyword, allQuestions, answerPool, suggestionPool]);
 
-  // 当前章节的问答
+  // 当前章节的问答（章节 id：静态问题取 chapter 字段，qa-com 动态问题从 tags/tagObject 解析章节名称）
   const currentQAs = useMemo(() => {
     if (searchKeyword.trim()) return filteredAll;
-    return LAW_QA.filter(qa => qa.chapter === activeChapter);
-  }, [activeChapter, searchKeyword, filteredAll]);
+    return allQuestions.filter(qa => getQuestionChapterId(qa) === activeChapter);
+  }, [activeChapter, searchKeyword, filteredAll, allQuestions]);
 
-  // 每个章节的条目数
+  // 每个章节的条目数（静态 + 动态）
   const chapterCounts = useMemo(() => {
     const counts = {};
-    LAW_QA.forEach(qa => {
-      counts[qa.chapter] = (counts[qa.chapter] || 0) + 1;
+    allQuestions.forEach(qa => {
+      const chapterId = getQuestionChapterId(qa);
+      if (chapterId) counts[chapterId] = (counts[chapterId] || 0) + 1;
     });
     return counts;
-  }, []);
+  }, [allQuestions]);
 
   const handleChapterClick = (chapterId) => {
     setActiveChapter(chapterId);
@@ -131,7 +167,7 @@ const CommonQAPage = () => {
                     handleSearch();
                   }
                 }}
-                placeholder="搜索问题、案例或法条关键词，如：押金、加班费、彩礼..."
+                placeholder="搜索问题、案例或建议关键词，如：押金、加班费、彩礼..."
                 className="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 placeholder-gray-400 text-sm outline-none transition focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
             </div>
@@ -248,10 +284,27 @@ const CommonQAPage = () => {
 
         {/* 问答列表 */}
         <div className="space-y-4">
-          {currentQAs.length > 0 ? (
-            currentQAs.map((item) => (
-              <QACardItem key={item.id} item={item} />
-            ))
+          {qaLoading ? (
+            <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+              <div className="inline-block w-8 h-8 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mb-3" />
+              <p className="text-gray-400">正在加载问答...</p>
+            </div>
+          ) : currentQAs.length > 0 ? (
+            currentQAs.map((qa) => {
+              // 通过 cid 配对回答与建议（静态与动态问答统一处理）
+              const { answers, suggestions } = getRelatedForQuestion(qa, {
+                answers: answerPool,
+                suggestions: suggestionPool,
+              });
+              return (
+                <QACardItem
+                  key={qa.id || qa.cid}
+                  article={qa}
+                  answers={answers}
+                  suggestions={suggestions}
+                />
+              );
+            })
           ) : (
             <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
               <div className="text-4xl mb-3">🔍</div>
