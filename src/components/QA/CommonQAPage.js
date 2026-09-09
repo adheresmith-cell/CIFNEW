@@ -11,6 +11,7 @@ import { LAW_QA_QUESTIONS, LAW_QA_ANSWERS, LAW_QA_SUGGESTIONS } from '../data/QA
 import { LAW_CHAPTERS, getChapterName, getQuestionChapterId, getRelatedForQuestion } from '../data/lawQA';
 import { fetchMockArticles } from '../data/mockArticles';
 import AskQuestionModal from './AskQuestionModal';
+import AddQAItemModal from './AddQAItemModal';
 import QACardItem from './QACardItem';
 import documentService from '../../services/documentService';
 
@@ -22,6 +23,7 @@ const CommonQAPage = () => {
   const [askMenuOpen, setAskMenuOpen] = useState(false); // 胶囊按钮下拉菜单开关
   const capsuleRef = useRef(null);
   const [askModalOpen, setAskModalOpen] = useState(false); // “提问题”弹窗开关
+  const [addItemModal, setAddItemModal] = useState(null); // 评论/建议弹窗：{ mode: 'ans-com'|'ans-sug', article }
 
   // 点击下拉菜单外部时自动关闭
   useEffect(() => {
@@ -63,8 +65,10 @@ const CommonQAPage = () => {
       const catType = (a) => (a && a.category && typeof a.category === 'object' ? a.category.type : null);
       setDynamicQA({
         questions: articles.filter((a) => catType(a) === 'qa-com'),
-        answers: articles.filter((a) => catType(a) === 'ans'),
-        suggestions: articles.filter((a) => catType(a) === 'sug'),
+        // 评论区 = 静态回答 + 动态 ans / ans-com（用户通过“评论”按钮新增，label 指向问题 cid）
+        answers: articles.filter((a) => catType(a) === 'ans' || catType(a) === 'ans-com'),
+        // 实用建议 = 静态建议 + 动态 sug / ans-sug（用户通过“建议”按钮新增，label 指向问题 cid）
+        suggestions: articles.filter((a) => catType(a) === 'sug' || catType(a) === 'ans-sug'),
       });
     } catch (err) {
       console.error('CommonQAPage - 加载用户提问失败:', err);
@@ -93,12 +97,38 @@ const CommonQAPage = () => {
     return result;
   };
 
+  // 打开评论/建议弹窗（QACardItem 传入被操作的问题）
+  const handleAddComment = (article) => setAddItemModal({ mode: 'ans-com', article });
+  const handleAddSuggestion = (article) => setAddItemModal({ mode: 'ans-sug', article });
+
+  // 提交评论/建议：category.type 区分 ans-com / ans-sug，label 指向问题的 cid（cid 兜底用 id）
+  const handleAddItemSubmit = async ({ content }) => {
+    if (!addItemModal) return { success: false, message: '缺少关联的问题信息' };
+    const { mode, article } = addItemModal;
+    const questionCid = article.cid || article.id;
+    if (!questionCid) {
+      return { success: false, message: '问题缺少 cid，无法关联评论/建议' };
+    }
+    const result = await documentService.save({
+      id: uuidv4(),
+      title: mode === 'ans-com' ? '评论' : '建议',
+      content: content.trim(),
+      tags: [],
+      category: { type: mode, label: questionCid },
+      isPublic: true,
+    });
+    if (result && result.success) {
+      await loadDynamicQA();
+    }
+    return result;
+  };
+
   // 合并静态问题与用户动态提问（qa-com）
   const allQuestions = useMemo(
     () => [...LAW_QA_QUESTIONS, ...dynamicQA.questions],
     [dynamicQA.questions]
   );
-  // 回答/建议池：静态 LAW_QA_ANSWERS/LAW_QA_SUGGESTIONS + 动态 ans/sug 文章，均通过 category.label 链接问题 cid
+  // 回答/建议池：静态 LAW_QA_ANSWERS/LAW_QA_SUGGESTIONS + 动态 ans/ans-com、sug/ans-sug 文章，均通过 category.label 链接问题 cid
   const answerPool = useMemo(() => [...LAW_QA_ANSWERS, ...dynamicQA.answers], [dynamicQA.answers]);
   const suggestionPool = useMemo(
     () => [...LAW_QA_SUGGESTIONS, ...dynamicQA.suggestions],
@@ -302,6 +332,8 @@ const CommonQAPage = () => {
                   article={qa}
                   answers={answers}
                   suggestions={suggestions}
+                  onAddComment={handleAddComment}
+                  onAddSuggestion={handleAddSuggestion}
                 />
               );
             })
@@ -330,6 +362,14 @@ const CommonQAPage = () => {
         isOpen={askModalOpen}
         onClose={() => setAskModalOpen(false)}
         onSubmit={handleAskSubmit}
+      />
+
+      {/* 评论/实用建议弹窗 */}
+      <AddQAItemModal
+        isOpen={!!addItemModal}
+        mode={addItemModal ? (addItemModal.mode === 'ans-com' ? 'comment' : 'suggestion') : 'comment'}
+        onClose={() => setAddItemModal(null)}
+        onSubmit={handleAddItemSubmit}
       />
     </div>
   );

@@ -7,6 +7,7 @@ import {
   faLightbulb,
   faComments,
   faUser,
+  faPlus,
 } from '@fortawesome/free-solid-svg-icons';
 import { getChapterName, getQuestionChapterId } from '../data/lawQA';
 
@@ -22,7 +23,13 @@ const extractQATitle = (content) => {
 // - article 为问题（静态 LAW_QA_QUESTIONS 或动态 qa-com 文章，均有 cid 标记）
 // - answers / suggestions 通过 category.label 链接到问题的 cid
 //   （对应 ALLArticles.getAnswersForQuestion 的配对规则）
-const QACardItem = ({ article = {}, answers = [], suggestions = [] }) => {
+const QACardItem = ({
+  article = {},
+  answers = [],
+  suggestions = [],
+  onAddComment,
+  onAddSuggestion,
+}) => {
   const [expanded, setExpanded] = useState(false);
 
   // 问题标题：优先 question，其次 title，再兼容从 content 提取
@@ -74,7 +81,18 @@ const QACardItem = ({ article = {}, answers = [], suggestions = [] }) => {
               <FontAwesomeIcon icon={faComments} className="text-gray-500" />
               <h4 className="text-sm font-bold text-gray-700">评论区</h4>
               {answers.length > 0 && (
-                <span className="ml-auto text-xs text-gray-400">{answers.length} 条回答</span>
+                <span className="text-xs text-gray-400">{answers.length} 条回答</span>
+              )}
+              {onAddComment && (
+                <button
+                  type="button"
+                  onClick={() => onAddComment(article)}
+                  title="添加评论"
+                  className="ml-auto flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full transition-colors"
+                >
+                  <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
+                  评论
+                </button>
               )}
             </div>
             {answers.length > 0 ? (
@@ -105,6 +123,20 @@ const QACardItem = ({ article = {}, answers = [], suggestions = [] }) => {
             <div className="flex items-center gap-2 mb-2">
               <FontAwesomeIcon icon={faLightbulb} className="text-purple-500" />
               <h4 className="text-sm font-bold text-purple-700">💡 实用建议</h4>
+              {suggestions.length > 0 && (
+                <span className="text-xs text-gray-400">{suggestions.length} 条建议</span>
+              )}
+              {onAddSuggestion && (
+                <button
+                  type="button"
+                  onClick={() => onAddSuggestion(article)}
+                  title="添加实用建议"
+                  className="ml-auto flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-full transition-colors"
+                >
+                  <FontAwesomeIcon icon={faPlus} className="text-[10px]" />
+                  建议
+                </button>
+              )}
             </div>
             {suggestions.length > 0 ? (
               <div className="space-y-3">
