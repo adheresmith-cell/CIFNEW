@@ -351,7 +351,7 @@ const CommonQAPage = () => {
             <FontAwesomeIcon icon={faSignInAlt} className="mt-0.5 flex-shrink-0" />
             <p>
               <span className="font-semibold">免责声明：</span>
-              本页面内容为法律知识科普，基于常见生活场景编写，仅供参考，不构成正式法律意见。遇到具体法律纠纷时，请及时咨询专业律师或拨打法律热线（12348）。
+              本页面内容为常识科普，基于常见生活场景编写，仅供参考，不构成正式法律意见。遇到具体纠纷时，请及时咨询专业律师或拨打法律热线（12348）。
             </p>
           </div>
         </div>
