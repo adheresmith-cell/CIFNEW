@@ -7,6 +7,9 @@
 
 const BACKEND_URL = process.env.REACT_APP_HELIA_URL || 'http://localhost:3456'
 
+// companies 数据库名（对应 orbit-server/orbit-config.json 中的 "companies"）
+const COMPANIES_DB = 'companies'
+
 class BackendClient {
   /**
    * 通用 fetch 封装
@@ -125,6 +128,45 @@ class BackendClient {
    */
   async dbCompanyAll(companyId) {
     return this._fetch(`/api/db/${encodeURIComponent(companyId)}/all`)
+  }
+
+  // =========================
+  // 公司库（companies）OrbitDB 操作
+  // =========================
+
+  /**
+   * 写入公司文档到 companies 数据库
+   * @param {Object} doc - 公司文档（必须包含 _id，建议使用 String(company.id)）
+   * @returns {Promise<{ok: boolean, id: string}>}
+   */
+  async dbCompaniesPut(doc) {
+    if (!doc || doc._id === undefined || doc._id === null || doc._id === '') {
+      throw new Error('dbCompaniesPut: doc._id is required')
+    }
+    return this._fetch(`/api/db/${COMPANIES_DB}/put`, {
+      method: 'POST',
+      body: JSON.stringify(doc),
+    })
+  }
+
+  /**
+   * 从 companies 数据库读取单个公司文档
+   * @param {string|number} id - 公司文档 _id
+   * @returns {Promise<Object|null>}
+   */
+  async dbCompaniesGet(id) {
+    return this._fetch(`/api/db/${COMPANIES_DB}/get/${encodeURIComponent(id)}`)
+  }
+
+  /**
+   * 读取 companies 数据库的所有公司文档
+   * @returns {Promise<Array>}
+   */
+  async dbCompaniesAll() {
+    const docs = await this._fetch(`/api/db/${COMPANIES_DB}/all`)
+    if (!Array.isArray(docs)) return []
+    // OrbitDB 可能返回 { hash, key, value } 包装，统一解包为原始文档
+    return docs.map(doc => (doc && doc.value ? doc.value : doc))
   }
 
   // =========================
