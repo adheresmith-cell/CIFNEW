@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import backendClient from '../../services/backendClient';
+
+// 弹窗底部「取消 / 确认新增」两个按钮共用同一样式（中性灰，要调整配色只需改这一处）
+const MODAL_BTN_CLASS =
+  'px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
 
 /**
  * 新增公司节点弹窗
@@ -20,6 +25,8 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
     parent: '',
     related: '',
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   if (!isOpen) return null;
 
@@ -27,12 +34,17 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim() || submitting) return;
+
+    // 生成 uuid 作为公司唯一标识
+    const uuid = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
     const newCompany = {
-      id: Date.now(),
+      id: uuid,
       name: formData.name.trim(),
       logo: `https://via.placeholder.com/80x80/6366f1/FFFFFF?text=${encodeURIComponent(formData.name.slice(0, 2))}`,
       industry: formData.industry.trim() || '其他',
@@ -53,6 +65,41 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
       newCompany.related = formData.related.split(/[,，、]/).map(s => s.trim()).filter(Boolean);
     }
 
+    // 组织为 mockCompanies 结构的 OrbitDB 文档（_id 为 OrbitDB 文档主键，必填）
+    const companyDoc = {
+      _id: uuid,
+      id: uuid,
+      name: newCompany.name,
+      logo: newCompany.logo,
+      industry: newCompany.industry,
+      scale: newCompany.scale,
+      city: newCompany.city,
+      description: newCompany.description,
+      jobs: 0,
+      rating: newCompany.rating,
+      founded: newCompany.founded,
+      website: newCompany.website,
+      stockCode: '',
+      englishName: '',
+      tags: newCompany.tags,
+      parent: newCompany.parent || '',
+      related: newCompany.related || [],
+    };
+
+    setSubmitError('');
+    setSubmitting(true);
+
+    try {
+      await backendClient.dbCompaniesPut(companyDoc);
+    } catch (error) {
+      // 严格一致：写库失败即视为新增失败 —— 不加入本地列表，保持弹窗打开
+      console.error('❌ 公司写入 companies OrbitDB 失败:', error.message);
+      setSubmitError(`保存失败：${error.message}`);
+      setSubmitting(false);
+      return;
+    }
+
+    setSubmitting(false);
     onSubmit(newCompany);
     setFormData({
       name: '',
@@ -89,7 +136,7 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
         </div>
 
         {/* 表单 */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="px-6 pt-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             {/* 公司名称 */}
             <div className="col-span-2">
@@ -235,20 +282,29 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
             </div>
           </div>
 
-          {/* 按钮 */}
-          <div className="flex justify-end gap-3 pt-2">
+          {/* 保存失败提示 */}
+          {submitError && (
+            <div className="p-4 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">
+              {submitError}
+            </div>
+          )}
+
+          {/* 按钮：sticky 固定在弹窗底部，内容过长时也不会被滚动隐藏 */}
+          <div className="sticky bottom-0 -mx-6 px-6 pt-4 pb-6 bg-white border-t border-gray-200 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={submitting}
+              className={MODAL_BTN_CLASS}
             >
               取消
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+              disabled={submitting}
+              className={MODAL_BTN_CLASS}
             >
-              确认新增
+              {submitting ? '提交中…' : '确认新增'}
             </button>
           </div>
         </form>
