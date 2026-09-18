@@ -89,12 +89,46 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
  * @param {function} onCompanyClick - 公司点击回调
  * @param {function} onAddCompany - 新增公司回调
  */
+/**
+ * 是否为数字型 id（爬取数据 transformed_companies 使用数字 id；
+ * 「新增公司节点」写入 OrbitDB 的公司使用 uuid 字符串 id）
+ */
+const isNumericId = (id) => id !== undefined && id !== null && id !== '' && !Number.isNaN(Number(id));
+
+/**
+ * 列表排序：爬取数据在前（按 id 升序），OrbitDB 新增公司追加在末尾。
+ *
+ * 注意：
+ *   1. 原实现 `a.id - b.id` 在数字与 uuid 混排时结果恒为 NaN（规范视为 +0），
+ *      只能依赖引擎的稳定排序才不串位，这里显式区分两类 id；
+ *   2. 分组按 source === 'orbit' 而不是「id 是否数字」，
+ *      因为库中可能存在数字 id 的新增记录，按 id 类型分组会让它插进爬取数据中间。
+ */
+const compareCompanies = (a, b) => {
+  const aOrbit = a.source === 'orbit';
+  const bOrbit = b.source === 'orbit';
+
+  // 爬取数据在前，OrbitDB 新增在后
+  if (aOrbit !== bOrbit) return aOrbit ? 1 : -1;
+  // 同为新增：保持合并（追加）顺序
+  if (aOrbit) return 0;
+
+  const aNumeric = isNumericId(a.id);
+  const bNumeric = isNumericId(b.id);
+  if (aNumeric && bNumeric) return Number(a.id) - Number(b.id);
+  if (aNumeric !== bNumeric) return aNumeric ? -1 : 1;
+  return 0;
+};
+
 function CompanyList({ companies, onCompanyClick, onAddCompany, currentPage, onPageChange }) {
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // 按 id 升序排序
-  const sortedCompanies = [...companies].sort((a, b) => a.id - b.id);
+  // 按 id 升序排序（OrbitDB 新增公司追加在末尾，见 compareCompanies）
+  const sortedCompanies = [...companies].sort(compareCompanies);
   const totalPages = Math.ceil(sortedCompanies.length / PAGE_SIZE);
+
+  // 来自 OrbitDB companies 数据库的新增公司数量
+  const orbitCount = sortedCompanies.filter(c => c.source === 'orbit').length;
 
   // 当列表数据变化时，如果当前页超出总页数则回退到第1页
   useEffect(() => {
@@ -162,6 +196,11 @@ function CompanyList({ companies, onCompanyClick, onAddCompany, currentPage, onP
           {totalPages > 1 && (
             <span className="text-gray-400 ml-2">
               （第 {currentPage} / {totalPages} 页）
+            </span>
+          )}
+          {orbitCount > 0 && currentPage < totalPages && (
+            <span className="text-amber-600 ml-2">
+              其中 {orbitCount} 条 OrbitDB 新增，见最后一页
             </span>
           )}
         </p>

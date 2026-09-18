@@ -22,6 +22,7 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
     rating: '',
     founded: '',
     website: '',
+    logo: '',
     parent: '',
     related: '',
   });
@@ -46,7 +47,9 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
     const newCompany = {
       id: uuid,
       name: formData.name.trim(),
-      logo: `https://via.placeholder.com/80x80/6366f1/FFFFFF?text=${encodeURIComponent(formData.name.slice(0, 2))}`,
+      // 不再自动生成第三方占位图链接（该服务已停运，加载失败会在卡片上留下空白）
+      // 填了合法的 http(s) 地址就沿用，否则留空 —— 前端会自动显示公司名色块，且不发起任何外网请求
+      logo: /^https?:\/\//i.test((formData.logo || '').trim()) ? formData.logo.trim() : '',
       industry: formData.industry.trim() || '其他',
       scale: formData.scale,
       city: formData.city.trim(),
@@ -55,6 +58,9 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
       rating: parseFloat(formData.rating) || 3.0,
       founded: formData.founded.trim(),
       website: formData.website.trim(),
+      // 标记数据来源与创建时间：列表据此把新增公司排在末尾并给出提示
+      source: 'orbit',
+      createdAt: Date.now(),
     };
 
     if (formData.parent.trim()) {
@@ -84,6 +90,8 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
       tags: newCompany.tags,
       parent: newCompany.parent || '',
       related: newCompany.related || [],
+      source: newCompany.source,
+      createdAt: newCompany.createdAt,
     };
 
     setSubmitError('');
@@ -111,6 +119,7 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
       rating: '',
       founded: '',
       website: '',
+      logo: '',
       parent: '',
       related: '',
     });
@@ -241,6 +250,18 @@ function AddCompanyModal({ isOpen, onClose, onSubmit }) {
                 value={formData.website}
                 onChange={e => handleChange('website', e.target.value)}
                 placeholder="如：www.example.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+              />
+            </div>
+
+            {/* Logo 图片地址 */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Logo 图片地址</label>
+              <input
+                type="text"
+                value={formData.logo}
+                onChange={e => handleChange('logo', e.target.value)}
+                placeholder="选填，如：https://example.com/logo.png；留空则显示公司名色块"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
               />
             </div>
