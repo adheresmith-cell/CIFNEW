@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '../../lib/utils';
+import signatureService from '../../services/signatureService';
 
 /** 用户信息支持的字段（导入时按白名单过滤，避免写入未知字段） */
 const PROFILE_FIELDS = ['name', 'email', 'phone', 'address', 'company', 'position'];
@@ -11,6 +12,9 @@ const PROFILE_FIELDS = ['name', 'email', 'phone', 'address', 'company', 'positio
  * @param {function} props.onClose - 关闭回调
  * @param {function} props.onSave - 保存回调 (data) => void
  * @param {object} props.initialData - 初始数据（编辑时传入）
+ *
+ * 支持把用户信息（含 signatureService 持久化的两个签名密钥）导出/导入为 JSON 文件；
+ * 导入只填充表单，点击「保存」时才一并写入 localStorage。
  */
 const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [formData, setFormData] = useState({
@@ -25,6 +29,7 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState({ type: '', content: '' }); // 操作提示（3 秒后自动消失）
   const fileInputRef = useRef(null); // 隐藏的文件选择框
+  const [pendingSignature, setPendingSignature] = useState(null); // 导入的签名密钥，待「保存」时落库
 
   // 显示操作提示
   const showMessage = (type, content) => {
@@ -66,6 +71,7 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
     }
     setErrors({});
     setMessage({ type: '', content: '' });
+    setPendingSignature(null);
   }, [initialData, isOpen]);
 
   const handleChange = (field) => (e) => {
@@ -97,6 +103,12 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
       console.error('保存用户信息到本地失败:', err);
     }
 
+    // 导入时携带的签名密钥随「保存」一并落库；未导入则保持原值不动
+    if (pendingSignature) {
+      signatureService.importStoredKeys(pendingSignature);
+      setPendingSignature(null);
+    }
+
     const saveFn = onSave || ((data) => {
       console.log('保存用户信息:', data);
     });
@@ -106,7 +118,10 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
 
   // 导出用户信息为 JSON 文件
   const handleExport = () => {
-    const hasData = PROFILE_FIELDS.some((field) => (formData[field] || '').trim());
+    // signatureService 持久化的两个 localStorage key 一并导出
+    const signature = signatureService.exportStoredKeys();
+    const hasSignature = !!(signature.publicKey || signature.privateKey);
+    const hasData = PROFILE_FIELDS.some((field) => (formData[field] || '').trim()) || hasSignature;
     if (!hasData) {
       showMessage('error', '没有可导出的用户信息');
       return;
@@ -116,9 +131,10 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
     const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
     const safeName = (formData.name || 'unnamed').replace(/[\\/:*?"<>|]/g, '_').trim() || 'unnamed';
     const data = {
-      version: '1.0',
+      version: '1.1',
       exportedAt: new Date().toISOString(),
       ...PROFILE_FIELDS.reduce((acc, field) => ({ ...acc, [field]: formData[field] || '' }), {}),
+      signature,
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -181,14 +197,29 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
         }
       });
 
-      if (matched === 0) {
+      // 签名密钥备份（兼容顶层与 { userProfile: {...} } 包装层两种写法）
+      const signature = (raw.signature && typeof raw.signature === 'object')
+        ? raw.signature
+        : (data.signature && typeof data.signature === 'object' ? data.signature : null);
+      const sigPublic = signature && typeof signature.publicKey === 'string' ? signature.publicKey.trim() : '';
+      const sigPrivate = signature && typeof signature.privateKey === 'string' ? signature.privateKey.trim() : '';
+      const signatureKeys = (sigPublic && sigPrivate) ? { publicKey: sigPublic, privateKey: sigPrivate } : null;
+
+      if (matched === 0 && !signatureKeys) {
         showMessage('error', '导入失败：未找到可用的用户信息字段');
         return;
       }
 
       setFormData(imported);
       setErrors({});
-      showMessage('success', '用户信息导入成功，请确认后点击保存');
+      // 方案 A：签名密钥也只暂存，点击「保存」时才写入 localStorage
+      setPendingSignature(signatureKeys);
+      showMessage(
+        'success',
+        signatureKeys
+          ? '用户信息导入成功（含签名密钥），请确认后点击保存'
+          : '用户信息导入成功，请确认后点击保存'
+      );
     };
     reader.readAsText(file);
     // 重置 input 以便再次选择同一文件
@@ -274,6 +305,11 @@ const UserProfileModal = ({ isOpen, onClose, onSave, initialData }) => {
             导出
           </button>
         </div>
+
+        {/* 隐私提示：导出内容含签名私钥 */}
+        <p className="px-6 pt-2 text-xs text-amber-600">
+          导出的 JSON 含本地签名私钥（cifnew.signature.*），请妥善保管、勿分享；导入后需点击「保存」才会写入本机。
+        </p>
 
         {/* 表单内容 */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">

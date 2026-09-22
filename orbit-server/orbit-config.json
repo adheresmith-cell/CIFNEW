@@ -23,6 +23,10 @@
       "dir": "./orbitdb-data"
     },
     {
+      "name": "2026-09",
+      "dir": "./orbitdb-data"
+    },
+    {
       "name": "images",
       "dir": "./orbitdb-data"
     }

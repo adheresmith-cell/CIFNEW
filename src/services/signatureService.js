@@ -8,7 +8,7 @@
  * 零新增依赖，纯 WebCrypto 实现。
  */
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   publicKey: 'cifnew.signature.publicKey',   // SPKI base64
   privateKey: 'cifnew.signature.privateKey', // PKCS8 base64
 };
@@ -124,6 +124,38 @@ async function getCurrentPublicKey() {
   return arrayBufferToBase64(exported);
 }
 
+/**
+ * 导出本地持久化的签名密钥（用于「用户信息 JSON」备份）
+ * @returns {{publicKey: string, privateKey: string}} base64(SPKI) / base64(PKCS8)，缺失时为空串
+ */
+function exportStoredKeys() {
+  return {
+    publicKey: localStorage.getItem(STORAGE_KEYS.publicKey) || '',
+    privateKey: localStorage.getItem(STORAGE_KEYS.privateKey) || '',
+  };
+}
+
+/**
+ * 从备份恢复本地签名密钥，并让内存里的密钥对缓存失效（下次使用会重新从 localStorage 导入）
+ * @param {{publicKey?: string, privateKey?: string}} keys
+ * @returns {boolean} 是否写入成功（两个 key 均为非空字符串才写入）
+ */
+function importStoredKeys(keys = {}) {
+  const publicKey = typeof keys.publicKey === 'string' ? keys.publicKey.trim() : '';
+  const privateKey = typeof keys.privateKey === 'string' ? keys.privateKey.trim() : '';
+  if (!publicKey || !privateKey) return false;
+
+  try {
+    localStorage.setItem(STORAGE_KEYS.publicKey, publicKey);
+    localStorage.setItem(STORAGE_KEYS.privateKey, privateKey);
+    cachedKeyPair = null;
+    return true;
+  } catch (error) {
+    console.error('❌ 恢复本地签名密钥失败:', error.message);
+    return false;
+  }
+}
+
 // ---------- 签名 / 验证 ----------
 
 /**
@@ -204,6 +236,8 @@ async function verifyOwner(owner, payload = {}) {
 const signatureService = {
   getKeyPair,
   getCurrentPublicKey,
+  exportStoredKeys,
+  importStoredKeys,
   signContent,
   createOwner,
   verifyOwner,
