@@ -305,12 +305,6 @@ const MyDocuments = () => {
           <div className="text-sm text-gray-400 mb-6">
             去编辑器创建一篇文档，它就会以你的 owner 签名出现在这里
           </div>
-          <button
-            onClick={() => navigate('/editor')}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            去创建文档
-          </button>
         </div>
       )}
 
