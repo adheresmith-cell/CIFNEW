@@ -1,0 +1,759 @@
+/**
+ * ============================================================
+ * SocialSecurityCalculator
+ * ============================================================
+ */
+
+.social-security-calculator {
+  width: 100%;
+  box-sizing: border-box;
+
+  margin: 24px 0;
+  padding: 20px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+
+  background: #ffffff;
+  color: #1f2937;
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Microsoft YaHei",
+    Arial,
+    sans-serif;
+}
+
+
+/* ============================================================
+   Header
+   ============================================================ */
+
+.ssc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+
+  border-bottom: 1px solid #eeeeee;
+}
+
+
+.ssc-title {
+  margin: 0;
+
+  font-size: 20px;
+  line-height: 1.4;
+
+  font-weight: 700;
+}
+
+
+.ssc-subtitle {
+  margin-top: 5px;
+
+  color: #6b7280;
+
+  font-size: 13px;
+}
+
+
+.ssc-reset {
+  padding: 7px 14px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+
+  background: #ffffff;
+  color: #4b5563;
+
+  font-size: 13px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+
+.ssc-reset:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+
+/* ============================================================
+   Input Area
+   ============================================================ */
+
+.ssc-input-area {
+  display: grid;
+
+  grid-template-columns:
+    repeat(7, minmax(120px, 1fr));
+
+  gap: 12px;
+
+  align-items: start;
+}
+
+
+.ssc-field {
+  min-width: 0;
+}
+
+
+.ssc-field label {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 20px;
+
+  margin-bottom: 7px;
+
+  color: #374151;
+
+  font-size: 13px;
+  font-weight: 600;
+}
+
+
+.ssc-field label span {
+  margin-left: 5px;
+
+  color: #9ca3af;
+
+  font-size: 11px;
+  font-weight: 400;
+
+  white-space: nowrap;
+}
+
+
+.ssc-field input,
+.ssc-field select {
+  width: 100%;
+  height: 38px;
+
+  box-sizing: border-box;
+
+  padding: 0 10px;
+
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: #111827;
+
+  font-family: inherit;
+  font-size: 14px;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+
+.ssc-field input:focus,
+.ssc-field select:focus {
+  border-color: #6b7280;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(107, 114, 128, 0.08);
+}
+
+
+.ssc-field input[readonly] {
+  background: #f9fafb;
+
+  color: #374151;
+
+  cursor: default;
+}
+
+
+.ssc-field-hint {
+  min-height: 17px;
+
+  margin-top: 5px;
+
+  color: #9ca3af;
+
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+
+/* ============================================================
+   Result
+   ============================================================ */
+
+.ssc-result {
+  display: flex;
+
+  align-items: stretch;
+
+  margin-top: 20px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  background: #f8fafc;
+
+  overflow: hidden;
+}
+
+
+.ssc-result-main {
+  flex: 1;
+
+  min-width: 240px;
+
+  padding: 18px;
+}
+
+
+.ssc-result-label {
+  color: #6b7280;
+
+  font-size: 13px;
+}
+
+
+.ssc-total {
+  margin-top: 5px;
+
+  color: #111827;
+
+  font-size: 30px;
+  line-height: 1.2;
+
+  font-weight: 700;
+}
+
+
+.ssc-total span {
+  margin-left: 5px;
+
+  color: #6b7280;
+
+  font-size: 13px;
+  font-weight: 400;
+}
+
+
+.ssc-result-items {
+  display: flex;
+
+  flex: 1;
+
+  min-width: 0;
+}
+
+
+.ssc-result-item {
+  flex: 1;
+
+  padding: 18px;
+
+  border-left: 1px solid #e5e7eb;
+}
+
+
+.ssc-result-item span {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #6b7280;
+
+  font-size: 12px;
+}
+
+
+.ssc-result-item strong {
+  display: block;
+
+  color: #111827;
+
+  font-size: 17px;
+}
+
+
+.ssc-result-item small {
+  margin-left: 3px;
+
+  color: #6b7280;
+
+  font-size: 11px;
+
+  font-weight: 400;
+}
+
+
+/* ============================================================
+   Section
+   ============================================================ */
+
+.ssc-detail,
+.ssc-month-table {
+  margin-top: 20px;
+  padding-top: 18px;
+
+  border-top: 1px solid #eeeeee;
+}
+
+
+.ssc-section-title {
+  margin-bottom: 12px;
+
+  color: #1f2937;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+
+/* ============================================================
+   Formula
+   ============================================================ */
+
+.ssc-formula-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+
+.ssc-formula {
+  min-width: 0;
+
+  padding: 14px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+
+  background: #fafafa;
+}
+
+
+.ssc-formula-name {
+  color: #6b7280;
+
+  font-size: 12px;
+}
+
+
+.ssc-formula-value {
+  margin: 7px 0;
+
+  color: #111827;
+
+  font-size: 19px;
+  line-height: 1.3;
+
+  font-weight: 700;
+}
+
+
+.ssc-formula-expression {
+  color: #6b7280;
+
+  font-size: 12px;
+  line-height: 1.6;
+
+  word-break: break-word;
+}
+
+
+/* ============================================================
+   Payment Months
+   ============================================================ */
+
+.ssc-month-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(8, minmax(70px, 1fr));
+
+  gap: 6px;
+}
+
+
+.ssc-month-item {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  min-width: 0;
+
+  padding: 8px 9px;
+
+  border: 1px solid #eeeeee;
+  border-radius: 6px;
+
+  background: #fafafa;
+
+  font-size: 12px;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+
+.ssc-month-item span {
+  color: #6b7280;
+}
+
+
+.ssc-month-item strong {
+  color: #374151;
+
+  font-weight: 600;
+}
+
+
+.ssc-month-item small {
+  margin-left: 2px;
+
+  color: #9ca3af;
+
+  font-size: 10px;
+
+  font-weight: 400;
+}
+
+
+.ssc-month-item.active {
+  border-color: #9ca3af;
+
+  background: #f3f4f6;
+}
+
+
+.ssc-month-item.active strong {
+  color: #111827;
+}
+
+
+/* ============================================================
+   Notice
+   ============================================================ */
+
+.ssc-notice {
+  margin-top: 20px;
+
+  padding: 14px 16px;
+
+  border-radius: 9px;
+
+  background: #f9fafb;
+
+  color: #6b7280;
+
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+
+.ssc-notice-title {
+  margin-bottom: 6px;
+
+  color: #374151;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+
+.ssc-notice p {
+  margin: 5px 0;
+}
+
+
+.ssc-notice strong {
+  color: #374151;
+}
+
+
+.ssc-warning {
+  color: #6b7280;
+}
+
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 1200px) {
+
+  .ssc-input-area {
+    grid-template-columns:
+      repeat(4, minmax(130px, 1fr));
+  }
+
+
+  .ssc-month-grid {
+    grid-template-columns:
+      repeat(6, minmax(80px, 1fr));
+  }
+
+}
+
+
+@media (max-width: 900px) {
+
+  .ssc-input-area {
+    grid-template-columns:
+      repeat(3, minmax(130px, 1fr));
+  }
+
+
+  .ssc-result {
+    flex-direction: column;
+  }
+
+
+  .ssc-result-items {
+    border-top: 1px solid #e5e7eb;
+  }
+
+
+  .ssc-result-item:first-child {
+    border-left: none;
+  }
+
+
+  .ssc-formula-list {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .ssc-month-grid {
+    grid-template-columns:
+      repeat(5, minmax(80px, 1fr));
+  }
+
+}
+
+
+@media (max-width: 650px) {
+
+  .social-security-calculator {
+    padding: 14px;
+  }
+
+
+  .ssc-input-area {
+    grid-template-columns:
+      repeat(2, minmax(120px, 1fr));
+  }
+
+
+  .ssc-month-grid {
+    grid-template-columns:
+      repeat(4, minmax(75px, 1fr));
+  }
+
+
+  .ssc-result-items {
+    display: grid;
+
+    grid-template-columns:
+      1fr 1fr;
+  }
+
+
+  .ssc-result-item {
+    border-left: none;
+
+    border-top: 1px solid #e5e7eb;
+  }
+
+
+  .ssc-result-item:nth-child(odd) {
+    border-right: 1px solid #e5e7eb;
+  }
+
+}
+
+
+@media (max-width: 450px) {
+
+  .ssc-header {
+    align-items: flex-start;
+  }
+
+
+  .ssc-title {
+    font-size: 18px;
+  }
+
+
+  .ssc-input-area {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .ssc-result-items {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .ssc-result-item:nth-child(odd) {
+    border-right: none;
+  }
+
+
+  .ssc-month-grid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+}
+
+
+/* ============================================================
+   个人账户区域
+   ============================================================ */
+
+.ssc-account-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.ssc-account-header label {
+  margin-bottom: 0;
+}
+
+
+/* ============================================================
+   Toggle
+   ============================================================ */
+
+.ssc-toggle {
+  display: inline-flex;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.ssc-toggle button {
+  border: 0;
+  background: transparent;
+  color: #666;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ssc-toggle button:hover {
+  background: #f5f5f5;
+}
+
+.ssc-toggle button.active {
+  background: #1677ff;
+  color: #fff;
+}
+
+
+/* ============================================================
+   输入框 + 单位
+   ============================================================ */
+
+.ssc-input-unit {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.ssc-input-unit input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  padding: 9px 10px;
+  background: transparent;
+}
+
+.ssc-input-unit span {
+  padding: 0 10px;
+  color: #888;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   按月缴费计算过程
+   ============================================================ */
+
+.ssc-account-calc {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 8px;
+  color: #666;
+  font-size: 13px;
+}
+
+.ssc-account-calc strong {
+  color: #222;
+  font-size: 14px;
+}
+
+
+/* ============================================================
+   自动计算的个人账户储存额
+   ============================================================ */
+
+.ssc-account-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  margin-top: 8px;
+  padding: 9px 10px;
+
+  background: #f5f7fa;
+  border-radius: 6px;
+}
+
+.ssc-account-result span {
+  color: #666;
+  font-size: 13px;
+}
+
+.ssc-account-result strong {
+  color: #1677ff;
+  font-size: 16px;
+}
