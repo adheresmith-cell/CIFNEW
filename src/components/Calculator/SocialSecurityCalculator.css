@@ -2,7 +2,22 @@
  * ============================================================
  * SocialSecurityCalculator
  * ============================================================
+ *
+ * 设计：
+ * - 白色主体
+ * - 浅灰背景
+ * - 蓝色作为主要强调色
+ * - 输入区域保持严格对齐
+ * - 个人账户 Toggle 不影响输入框高度
+ * - 横幅式布局
+ *
+ * ============================================================
  */
+
+
+/* ============================================================
+   Root
+   ============================================================ */
 
 .social-security-calculator {
   width: 100%;
@@ -22,6 +37,7 @@
     BlinkMacSystemFont,
     "Segoe UI",
     "Microsoft YaHei",
+    "PingFang SC",
     Arial,
     sans-serif;
 }
@@ -39,12 +55,14 @@
   padding-bottom: 16px;
   margin-bottom: 18px;
 
-  border-bottom: 1px solid #eeeeee;
+  border-bottom: 1px solid #e8eef7;
 }
 
 
 .ssc-title {
   margin: 0;
+
+  color: #172033;
 
   font-size: 20px;
   line-height: 1.4;
@@ -56,34 +74,44 @@
 .ssc-subtitle {
   margin-top: 5px;
 
-  color: #6b7280;
+  color: #718096;
 
   font-size: 13px;
 }
 
 
-.ssc-reset {
-  padding: 7px 14px;
+/* ============================================================
+   Reset
+   ============================================================ */
 
-  border: 1px solid #d1d5db;
+.ssc-reset {
+  height: 32px;
+
+  padding: 0 14px;
+
+  border: 1px solid #d5dce8;
   border-radius: 7px;
 
   background: #ffffff;
-  color: #4b5563;
+  color: #5b6575;
 
   font-size: 13px;
 
   cursor: pointer;
 
   transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 
 .ssc-reset:hover {
-  background: #f9fafb;
-  border-color: #9ca3af;
+  border-color: #3b82f6;
+
+  background: #f5f9ff;
+
+  color: #2563eb;
 }
 
 
@@ -94,41 +122,59 @@
 .ssc-input-area {
   display: grid;
 
+  /*
+   * 7 个字段在宽屏下一行排列。
+   *
+   * 使用 minmax(0, 1fr)，避免某一个字段
+   * 因为内容过长把整行撑开。
+   */
   grid-template-columns:
-    repeat(7, minmax(120px, 1fr));
+    repeat(7, minmax(0, 1fr));
 
-  gap: 12px;
+  gap: 14px;
 
   align-items: start;
 }
 
+
+/* ============================================================
+   Field
+   ============================================================ */
 
 .ssc-field {
   min-width: 0;
 }
 
 
-.ssc-field label {
+/* ============================================================
+   普通字段 Label
+   ============================================================ */
+
+.ssc-field > label {
   display: flex;
 
   align-items: center;
   justify-content: space-between;
 
-  min-height: 20px;
+  height: 20px;
 
-  margin-bottom: 7px;
+  margin: 0 0 7px;
 
   color: #374151;
 
   font-size: 13px;
+  line-height: 20px;
+
   font-weight: 600;
+
+  white-space: nowrap;
 }
 
 
-.ssc-field label span {
+.ssc-field > label span {
   margin-left: 5px;
 
-  color: #9ca3af;
+  color: #9aa4b2;
 
   font-size: 11px;
   font-weight: 400;
@@ -136,6 +182,10 @@
   white-space: nowrap;
 }
 
+
+/* ============================================================
+   Input / Select
+   ============================================================ */
 
 .ssc-field input,
 .ssc-field select {
@@ -146,16 +196,202 @@
 
   padding: 0 10px;
 
-  border: 1px solid #d1d5db;
+  border: 1px solid #d2d9e5;
   border-radius: 7px;
 
   outline: none;
 
   background: #ffffff;
-  color: #111827;
+  color: #1f2937;
 
   font-family: inherit;
   font-size: 14px;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+
+/* ============================================================
+   Focus
+   ============================================================ */
+
+.ssc-field input:focus,
+.ssc-field select:focus {
+  border-color: #3b82f6;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(59, 130, 246, 0.10);
+}
+
+
+/* ============================================================
+   Readonly
+   ============================================================ */
+
+.ssc-field input[readonly] {
+  background: #f7f9fc;
+
+  color: #4b5563;
+
+  cursor: default;
+}
+
+
+/* ============================================================
+   Hint
+   ============================================================ */
+
+.ssc-field-hint {
+  min-height: 17px;
+
+  margin-top: 5px;
+
+  color: #9aa4b2;
+
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+
+/* ============================================================
+   个人账户字段 Header
+   ============================================================ */
+
+/*
+ * 关键：
+ *
+ * 不再让 Toggle 参与普通 label 的高度计算。
+ *
+ * .ssc-account-header 本身固定高度 20px，
+ * 因此下面的输入框会与其他字段严格对齐。
+ */
+
+.ssc-account-header {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  height: 20px;
+
+  margin: 0 0 7px;
+
+  gap: 6px;
+}
+
+
+.ssc-account-header label {
+  display: block;
+
+  height: 20px;
+
+  margin: 0;
+
+  color: #374151;
+
+  font-size: 13px;
+  line-height: 20px;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   Toggle
+   ============================================================ */
+
+.ssc-toggle {
+  display: inline-flex;
+
+  flex-shrink: 0;
+
+  height: 22px;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+
+  overflow: hidden;
+
+  background: #ffffff;
+}
+
+
+.ssc-toggle button {
+  height: 20px;
+
+  padding: 0 7px;
+
+  border: 0;
+
+  background: transparent;
+
+  color: #64748b;
+
+  font-family: inherit;
+  font-size: 10px;
+
+  line-height: 20px;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+
+.ssc-toggle button + button {
+  border-left: 1px solid #e2e8f0;
+}
+
+
+.ssc-toggle button:hover {
+  background: #f3f7fd;
+
+  color: #2563eb;
+}
+
+
+.ssc-toggle button.active {
+  background: #2563eb;
+
+  color: #ffffff;
+}
+
+
+.ssc-toggle button.active + button {
+  border-left-color: #2563eb;
+}
+
+
+/* ============================================================
+   个人账户输入框
+   ============================================================ */
+
+.ssc-input-unit {
+  display: flex;
+
+  align-items: center;
+
+  width: 100%;
+  height: 38px;
+
+  box-sizing: border-box;
+
+  border: 1px solid #d2d9e5;
+  border-radius: 7px;
+
+  overflow: hidden;
+
+  background: #ffffff;
 
   transition:
     border-color 0.15s ease,
@@ -163,34 +399,124 @@
 }
 
 
-.ssc-field input:focus,
-.ssc-field select:focus {
-  border-color: #6b7280;
+.ssc-input-unit:focus-within {
+  border-color: #3b82f6;
 
   box-shadow:
-    0 0 0 2px
-    rgba(107, 114, 128, 0.08);
+    0 0 0 3px
+    rgba(59, 130, 246, 0.10);
 }
 
 
-.ssc-field input[readonly] {
-  background: #f9fafb;
+.ssc-input-unit input {
+  flex: 1;
 
-  color: #374151;
+  min-width: 0;
 
-  cursor: default;
+  width: 0;
+  height: 36px;
+
+  padding: 0 10px;
+
+  border: 0;
+  outline: none;
+
+  background: transparent;
+
+  color: #1f2937;
+
+  font-family: inherit;
+  font-size: 14px;
 }
 
 
-.ssc-field-hint {
-  min-height: 17px;
+.ssc-input-unit span {
+  display: flex;
 
-  margin-top: 5px;
+  align-items: center;
 
-  color: #9ca3af;
+  height: 100%;
+
+  padding: 0 9px;
+
+  color: #8a94a3;
+
+  font-size: 12px;
+
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   按月缴费计算过程
+   ============================================================ */
+
+.ssc-account-calc {
+  display: flex;
+
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 5px;
+
+  min-height: 20px;
+
+  margin-top: 6px;
+
+  color: #7b8798;
+
+  font-size: 12px;
+}
+
+
+.ssc-account-calc strong {
+  color: #2563eb;
+
+  font-size: 13px;
+}
+
+
+/* ============================================================
+   自动计算的个人账户储存额
+   ============================================================ */
+
+.ssc-account-result {
+  display: flex;
+
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  min-height: 38px;
+
+  box-sizing: border-box;
+
+  margin-top: 6px;
+  padding: 7px 10px;
+
+  border: 1px solid #dbeafe;
+  border-radius: 7px;
+
+  background: #eff6ff;
+}
+
+
+.ssc-account-result span {
+  color: #64748b;
 
   font-size: 11px;
-  line-height: 1.4;
+
+  white-space: nowrap;
+}
+
+
+.ssc-account-result strong {
+  color: #2563eb;
+
+  font-size: 14px;
+
+  white-space: nowrap;
 }
 
 
@@ -205,14 +531,18 @@
 
   margin-top: 20px;
 
-  border: 1px solid #e5e7eb;
+  border: 1px solid #dbe4f0;
   border-radius: 10px;
 
-  background: #f8fafc;
+  background: #f7faff;
 
   overflow: hidden;
 }
 
+
+/* ============================================================
+   Main Result
+   ============================================================ */
 
 .ssc-result-main {
   flex: 1;
@@ -224,7 +554,7 @@
 
 
 .ssc-result-label {
-  color: #6b7280;
+  color: #64748b;
 
   font-size: 13px;
 }
@@ -233,7 +563,7 @@
 .ssc-total {
   margin-top: 5px;
 
-  color: #111827;
+  color: #1d4ed8;
 
   font-size: 30px;
   line-height: 1.2;
@@ -245,12 +575,16 @@
 .ssc-total span {
   margin-left: 5px;
 
-  color: #6b7280;
+  color: #64748b;
 
   font-size: 13px;
   font-weight: 400;
 }
 
+
+/* ============================================================
+   Result Items
+   ============================================================ */
 
 .ssc-result-items {
   display: flex;
@@ -264,9 +598,11 @@
 .ssc-result-item {
   flex: 1;
 
+  min-width: 0;
+
   padding: 18px;
 
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid #dbe4f0;
 }
 
 
@@ -275,7 +611,7 @@
 
   margin-bottom: 7px;
 
-  color: #6b7280;
+  color: #64748b;
 
   font-size: 12px;
 }
@@ -284,7 +620,7 @@
 .ssc-result-item strong {
   display: block;
 
-  color: #111827;
+  color: #1f2937;
 
   font-size: 17px;
 }
@@ -293,7 +629,7 @@
 .ssc-result-item small {
   margin-left: 3px;
 
-  color: #6b7280;
+  color: #64748b;
 
   font-size: 11px;
 
@@ -310,17 +646,37 @@
   margin-top: 20px;
   padding-top: 18px;
 
-  border-top: 1px solid #eeeeee;
+  border-top: 1px solid #e8eef7;
 }
 
 
 .ssc-section-title {
+  display: flex;
+
+  align-items: center;
+
   margin-bottom: 12px;
 
   color: #1f2937;
 
   font-size: 15px;
   font-weight: 700;
+}
+
+
+.ssc-section-title::before {
+  content: "";
+
+  display: inline-block;
+
+  width: 3px;
+  height: 15px;
+
+  margin-right: 8px;
+
+  border-radius: 2px;
+
+  background: #2563eb;
 }
 
 
@@ -343,15 +699,28 @@
 
   padding: 14px;
 
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e2e8f0;
   border-radius: 9px;
 
-  background: #fafafa;
+  background: #ffffff;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+
+.ssc-formula:hover {
+  border-color: #bfdbfe;
+
+  box-shadow:
+    0 2px 8px
+    rgba(30, 64, 175, 0.05);
 }
 
 
 .ssc-formula-name {
-  color: #6b7280;
+  color: #64748b;
 
   font-size: 12px;
 }
@@ -360,7 +729,7 @@
 .ssc-formula-value {
   margin: 7px 0;
 
-  color: #111827;
+  color: #1d4ed8;
 
   font-size: 19px;
   line-height: 1.3;
@@ -370,7 +739,7 @@
 
 
 .ssc-formula-expression {
-  color: #6b7280;
+  color: #718096;
 
   font-size: 12px;
   line-height: 1.6;
@@ -403,21 +772,22 @@
 
   padding: 8px 9px;
 
-  border: 1px solid #eeeeee;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
 
-  background: #fafafa;
+  background: #ffffff;
 
   font-size: 12px;
 
   transition:
     border-color 0.15s ease,
-    background 0.15s ease;
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 
 .ssc-month-item span {
-  color: #6b7280;
+  color: #64748b;
 }
 
 
@@ -431,7 +801,7 @@
 .ssc-month-item small {
   margin-left: 2px;
 
-  color: #9ca3af;
+  color: #9aa4b2;
 
   font-size: 10px;
 
@@ -439,15 +809,22 @@
 }
 
 
-.ssc-month-item.active {
-  border-color: #9ca3af;
+/* 当前退休年龄 */
 
-  background: #f3f4f6;
+.ssc-month-item.active {
+  border-color: #60a5fa;
+
+  background: #eff6ff;
+}
+
+
+.ssc-month-item.active span {
+  color: #2563eb;
 }
 
 
 .ssc-month-item.active strong {
-  color: #111827;
+  color: #1d4ed8;
 }
 
 
@@ -460,11 +837,12 @@
 
   padding: 14px 16px;
 
+  border: 1px solid #e2e8f0;
   border-radius: 9px;
 
-  background: #f9fafb;
+  background: #f8fafc;
 
-  color: #6b7280;
+  color: #64748b;
 
   font-size: 12px;
   line-height: 1.7;
@@ -487,12 +865,12 @@
 
 
 .ssc-notice strong {
-  color: #374151;
+  color: #334155;
 }
 
 
 .ssc-warning {
-  color: #6b7280;
+  color: #64748b;
 }
 
 
@@ -500,11 +878,21 @@
    Responsive
    ============================================================ */
 
+@media (max-width: 1400px) {
+
+  .ssc-input-area {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+  }
+
+}
+
+
 @media (max-width: 1200px) {
 
   .ssc-input-area {
     grid-template-columns:
-      repeat(4, minmax(130px, 1fr));
+      repeat(4, minmax(0, 1fr));
   }
 
 
@@ -520,7 +908,7 @@
 
   .ssc-input-area {
     grid-template-columns:
-      repeat(3, minmax(130px, 1fr));
+      repeat(3, minmax(0, 1fr));
   }
 
 
@@ -530,7 +918,7 @@
 
 
   .ssc-result-items {
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #dbe4f0;
   }
 
 
@@ -553,22 +941,44 @@
 }
 
 
-@media (max-width: 650px) {
-
-  .social-security-calculator {
-    padding: 14px;
-  }
-
+@media (max-width: 700px) {
 
   .ssc-input-area {
     grid-template-columns:
-      repeat(2, minmax(120px, 1fr));
+      repeat(2, minmax(0, 1fr));
   }
 
 
-  .ssc-month-grid {
-    grid-template-columns:
-      repeat(4, minmax(75px, 1fr));
+  /*
+   * 屏幕变窄以后，
+   * 个人账户标题可能放不下 Toggle。
+   *
+   * 允许标题区域换行，
+   * 但输入框仍然保持 38px。
+   */
+
+  .ssc-account-header {
+    height: auto;
+
+    min-height: 20px;
+
+    align-items: flex-start;
+  }
+
+
+  .ssc-account-header label {
+    flex: 1;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+  }
+
+
+  .ssc-toggle {
+    flex-shrink: 0;
   }
 
 
@@ -583,18 +993,29 @@
   .ssc-result-item {
     border-left: none;
 
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #dbe4f0;
   }
 
 
   .ssc-result-item:nth-child(odd) {
-    border-right: 1px solid #e5e7eb;
+    border-right: 1px solid #dbe4f0;
+  }
+
+
+  .ssc-month-grid {
+    grid-template-columns:
+      repeat(4, minmax(75px, 1fr));
   }
 
 }
 
 
-@media (max-width: 450px) {
+@media (max-width: 520px) {
+
+  .social-security-calculator {
+    padding: 14px;
+  }
+
 
   .ssc-header {
     align-items: flex-start;
@@ -628,132 +1049,16 @@
       repeat(2, 1fr);
   }
 
-}
+
+  .ssc-account-header {
+    gap: 4px;
+  }
 
 
-/* ============================================================
-   个人账户区域
-   ============================================================ */
+  .ssc-toggle button {
+    padding: 0 6px;
 
-.ssc-account-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
+    font-size: 10px;
+  }
 
-.ssc-account-header label {
-  margin-bottom: 0;
-}
-
-
-/* ============================================================
-   Toggle
-   ============================================================ */
-
-.ssc-toggle {
-  display: inline-flex;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.ssc-toggle button {
-  border: 0;
-  background: transparent;
-  color: #666;
-  padding: 5px 10px;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.ssc-toggle button:hover {
-  background: #f5f5f5;
-}
-
-.ssc-toggle button.active {
-  background: #1677ff;
-  color: #fff;
-}
-
-
-/* ============================================================
-   输入框 + 单位
-   ============================================================ */
-
-.ssc-input-unit {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  overflow: hidden;
-  background: #fff;
-}
-
-.ssc-input-unit input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  outline: none;
-  padding: 9px 10px;
-  background: transparent;
-}
-
-.ssc-input-unit span {
-  padding: 0 10px;
-  color: #888;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-
-/* ============================================================
-   按月缴费计算过程
-   ============================================================ */
-
-.ssc-account-calc {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
-  margin-top: 8px;
-  color: #666;
-  font-size: 13px;
-}
-
-.ssc-account-calc strong {
-  color: #222;
-  font-size: 14px;
-}
-
-
-/* ============================================================
-   自动计算的个人账户储存额
-   ============================================================ */
-
-.ssc-account-result {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-
-  margin-top: 8px;
-  padding: 9px 10px;
-
-  background: #f5f7fa;
-  border-radius: 6px;
-}
-
-.ssc-account-result span {
-  color: #666;
-  font-size: 13px;
-}
-
-.ssc-account-result strong {
-  color: #1677ff;
-  font-size: 16px;
 }
