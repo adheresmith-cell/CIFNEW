@@ -1062,3 +1062,41 @@
   }
 
 }
+
+/* 展开查看计算过程、计发月数对照表和说明*/
+.ssc-extra {
+  margin-top:20px;
+  border-top:1px solid #e8eef7;
+}
+
+.ssc-extra summary {
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  min-height:40px;
+  cursor:pointer;
+  color:#64748b;
+  font-size:13px;
+  font-weight:600;
+  list-style:none;
+  user-select:none;
+}
+
+.ssc-extra summary::-webkit-details-marker {
+  display:none;
+}
+
+.ssc-extra summary::before {
+  content:"展开详细计算";
+  color:#2563eb;
+}
+
+.ssc-extra[open] summary::before {
+  content:"收起详细计算";
+}
+
+.ssc-extra .ssc-detail,
+.ssc-extra .ssc-month-table,
+.ssc-extra .ssc-notice {
+  display:block;
+}

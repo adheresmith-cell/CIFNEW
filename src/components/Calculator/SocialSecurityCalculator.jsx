@@ -1065,7 +1065,8 @@ function SocialSecurityCalculator() {
         </div>
 
       </div>
-
+      <details className="ssc-extra">
+        <summary>查看计算过程、计发月数对照表和说明</summary>
 
       {/* ====================================================
           计算过程
@@ -1389,6 +1390,7 @@ function SocialSecurityCalculator() {
         </p>
 
       </div>
+      </details>
 
     </section>
   );
