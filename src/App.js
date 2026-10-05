@@ -7,6 +7,7 @@ import MyDocuments from './components/Articles/MyDocuments';
 import HappyFooter from './components/Articles/AppFooter';
 import ArticleDetail from './components/Articles/ArticleDetail';
 import { SearchProvider, useSearch } from './context/SearchContext';
+import { QaChapterProvider } from './context/QaChapterContext';
 import { loadAndStoreData } from "./services/loadCompInfo";
 import FlightSearchBar from './components/Home/FlightSearchBar';
 import CompanySearchBar from './components/Home/CompanySearchBar';
@@ -22,6 +23,7 @@ import CytoscapeTree from './components/Editor/CytoscapeTree';
 // import pubsubAggregator from './services/pubsubAggregator';
 import backendClient from './services/backendClient';
 import { syncMonthlyToIndexedDB } from './services/orbitUpdateService';
+import { fetchOrbitCompanies, mergeCompanies } from './services/orbitCompanyService';
 import MonthlyDbTest from './components/Test/MonthlyDbTest';
 import OrbitDbDocTest from './components/Test/OrbitDbDocTest';
 import OrbitServerTest from './components/Test/OrbitServerTest';
@@ -38,15 +40,19 @@ const AppRoutes = () => {
   const filteredCompanies = companies.filter(company => {
     const query = searchQuery.toLowerCase().trim();
 
-    // 关键词过滤
-    if (query && !(company.name.toLowerCase().includes(query) ||
-      company.description.toLowerCase().includes(query) ||
-      company.industry.toLowerCase().includes(query))) {
+    // 关键词过滤（字段兜底空串：历史/外部写入的 OrbitDB 记录可能缺失这些字段）
+    const name = (company.name || '').toLowerCase();
+    const description = (company.description || '').toLowerCase();
+    const companyIndustry = (company.industry || '').toLowerCase();
+
+    if (query && !(name.includes(query) ||
+      description.includes(query) ||
+      companyIndustry.includes(query))) {
       return false;
     }
 
     // 行业过滤
-    if (industry && !company.industry.includes(industry)) {
+    if (industry && !(company.industry || '').includes(industry)) {
       return false;
     }
 
@@ -89,6 +95,18 @@ const AppRoutes = () => {
     syncMonthlyToIndexedDB().catch(err => {
       console.error('OrbitDB 月度同步失败:', err);
     });
+
+    // 读取 OrbitDB companies 数据库中「新增公司节点」写入的公司，追加到列表末尾
+    let cancelled = false;
+    fetchOrbitCompanies().then(({ docs, error }) => {
+      if (cancelled || error || docs.length === 0) return;
+      setCompanies(prev => mergeCompanies(prev, docs));
+      console.log(`✅ 已从 OrbitDB companies 载入 ${docs.length} 条公司数据`);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -197,9 +215,11 @@ const App = () => {
 
   return (
     <SearchProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <QaChapterProvider>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </QaChapterProvider>
     </SearchProvider>
   );
 };

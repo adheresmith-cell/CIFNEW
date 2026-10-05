@@ -14,6 +14,7 @@ import { LAW_QA_QUESTIONS, LAW_QA_ANSWERS, LAW_QA_SUGGESTIONS } from './QAData';
 
 export const LAW_CHAPTERS = [
   { id: 'travel', name: '出行', icon: '🚗', color: 'bg-blue-500' },
+  { id: 'love', name: '恋爱', icon: '💗', color: 'bg-pink-500' },
   { id: 'rental', name: '租房', icon: '🏠', color: 'bg-amber-500' },
   { id: 'campus', name: '校园', icon: '🎓', color: 'bg-indigo-500' },
   { id: 'finance', name: '理财', icon: '💰', color: 'bg-emerald-500' },
@@ -22,6 +23,9 @@ export const LAW_CHAPTERS = [
   { id: 'insurance', name: '保险', icon: '🛡️', color: 'bg-teal-500' },
   { id: 'other', name: '其他', icon: '📦', color: 'bg-gray-600' },
 ];
+
+// 标题栏横列单选按钮（多选一）：首项「全部」+ 各章节，供 Navigation 与 /qa 页面共用
+export const CHAPTER_TABS = [{ id: 'all', name: '全部', icon: '📚' }, ...LAW_CHAPTERS];
 
 // 数据再导出，保持向后兼容（LAW_QA 为兼容导出的扁平结构）
 export { LAW_QA } from './QAData';

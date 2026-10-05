@@ -14,14 +14,17 @@ import AskQuestionModal from './AskQuestionModal';
 import AddQAItemModal from './AddQAItemModal';
 import QACardItem from './QACardItem';
 import documentService from '../../services/documentService';
+import { useQaChapter } from '../../context/QaChapterContext';
 
 // ==================== 主页面 ====================
 const CommonQAPage = () => {
-  const [activeChapter, setActiveChapter] = useState(LAW_CHAPTERS[0].id);
+  // 章节状态由标题栏（Navigation）的横列单选按钮驱动，经 Context 共享；'all' 表示不按章节过滤
+  const { activeChapter, version, setActiveChapter } = useQaChapter();
   const [searchKeyword, setSearchKeyword] = useState(''); // 已提交的搜索关键词（点击“搜索问题”后更新）
   const [searchInput, setSearchInput] = useState(''); // 输入框草稿（打字时不触发搜索）
   const [askMenuOpen, setAskMenuOpen] = useState(false); // 胶囊按钮下拉菜单开关
   const capsuleRef = useRef(null);
+  const skipChapterSyncRef = useRef(false); // 搜索提交会把章节归零，用它跳过随之而来的清空
   const [askModalOpen, setAskModalOpen] = useState(false); // “提问题”弹窗开关
   const [addItemModal, setAddItemModal] = useState(null); // 评论/建议弹窗：{ mode: 'ans-com'|'ans-sug', article }
 
@@ -36,9 +39,24 @@ const CommonQAPage = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // 标题栏点击章节胶囊时清除页面内的搜索态（搜索与章节互斥）；重复点击同一胶囊也会触发（version 变化）
+  useEffect(() => {
+    if (skipChapterSyncRef.current) {
+      skipChapterSyncRef.current = false;
+      return;
+    }
+    setSearchKeyword('');
+    setSearchInput('');
+  }, [activeChapter, version]);
+
   // 左侧“搜索问题”按钮：提交搜索关键词，点击后才显示搜索结果
   const handleSearch = () => {
     setAskMenuOpen(false);
+    if (activeChapter !== 'all') {
+      // 章节归零会触发上面的 effect 清空搜索，这里打标记跳过，避免刚提交的关键词被清掉
+      skipChapterSyncRef.current = true;
+      setActiveChapter('all'); // 搜索面向全部章节，避免章节胶囊停留在旧的高亮态
+    }
     setSearchKeyword(searchInput.trim());
   };
 
@@ -156,29 +174,17 @@ const CommonQAPage = () => {
   // 当前章节的问答（章节 id：静态问题取 chapter 字段，qa-com 动态问题从 tags/tagObject 解析章节名称）
   const currentQAs = useMemo(() => {
     if (searchKeyword.trim()) return filteredAll;
+    if (activeChapter === 'all') return allQuestions;
     return allQuestions.filter(qa => getQuestionChapterId(qa) === activeChapter);
   }, [activeChapter, searchKeyword, filteredAll, allQuestions]);
 
-  // 每个章节的条目数（静态 + 动态）
-  const chapterCounts = useMemo(() => {
-    const counts = {};
-    allQuestions.forEach(qa => {
-      const chapterId = getQuestionChapterId(qa);
-      if (chapterId) counts[chapterId] = (counts[chapterId] || 0) + 1;
-    });
-    return counts;
-  }, [allQuestions]);
-
-  const handleChapterClick = (chapterId) => {
-    setActiveChapter(chapterId);
-    setSearchKeyword('');
-    setSearchInput('');
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 顶部吸顶搜索栏：始终置顶，随时可搜 */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+      {/* 顶部吸顶搜索栏：紧贴吸顶导航栏之下（top 由 --nav-h 提供），始终可见，随时可搜 */}
+      <div
+        className="sticky z-40 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm"
+        style={{ top: 'var(--nav-h, 0px)' }}
+      >
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             {/* 搜索框 */}
@@ -197,7 +203,7 @@ const CommonQAPage = () => {
                     handleSearch();
                   }
                 }}
-                placeholder="搜索问题、案例或建议关键词，如：押金、加班费、彩礼..."
+                placeholder="搜索问题、案例或建议关键词，如：社保、公积金、人才公寓..."
                 className="w-full pl-11 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 text-gray-800 placeholder-gray-400 text-sm outline-none transition focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
             </div>
@@ -256,36 +262,13 @@ const CommonQAPage = () => {
 
       {/* 主体内容 */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* 章节导航 */}
-        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-3 mb-8">
-          {LAW_CHAPTERS.map((chapter) => {
-            const isActive = activeChapter === chapter.id && !searchKeyword;
-            return (
-              <button
-                key={chapter.id}
-                onClick={() => handleChapterClick(chapter.id)}
-                className={`flex flex-col items-center gap-1.5 px-3 py-3 rounded-xl border transition-all ${
-                  isActive
-                    ? `${chapter.color} text-white border-transparent shadow-md scale-[1.02]`
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:shadow-sm'
-                }`}
-              >
-                <span className="text-xl leading-none">{chapter.icon}</span>
-                <span className="text-sm font-medium">{chapter.name}</span>
-                <span className={`text-[10px] ${isActive ? 'text-white/80' : 'text-gray-400'}`}>
-                  {chapterCounts[chapter.id] || 0} 问
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
         {/* 分区说明 */}
         {!searchKeyword.trim() && (
           <div className="flex items-center gap-2 mb-4">
             <h2 className="text-lg font-bold text-gray-800">
-              {LAW_CHAPTERS.find(c => c.id === activeChapter)?.icon}{' '}
-              {getChapterName(activeChapter)}专题
+              {activeChapter === 'all'
+                ? '📚 全部问答'
+                : `${LAW_CHAPTERS.find(c => c.id === activeChapter)?.icon || ''} ${getChapterName(activeChapter)}专题`}
             </h2>
             <span className="text-sm text-gray-400">
               — 共 {currentQAs.length} 个问答
@@ -340,7 +323,11 @@ const CommonQAPage = () => {
           ) : (
             <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
               <div className="text-4xl mb-3">🔍</div>
-              <p className="text-gray-500">未找到相关问答，换个关键词试试</p>
+              <p className="text-gray-500">
+                {searchKeyword.trim()
+                  ? '未找到相关问答，换个关键词试试'
+                  : '该分类下暂无问答，试试其他分类'}
+              </p>
             </div>
           )}
         </div>
