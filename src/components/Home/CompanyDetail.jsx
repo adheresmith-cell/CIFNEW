@@ -168,6 +168,28 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEdi
                 </div>
               )}
 
+              {/* 上级组织 */}
+              {company.parent && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {company.parent.split(',').map((tag, idx) => (
+                    <span key={idx} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200">
+                      {tag.trim()}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* 关联组织 */}
+              {company.related && company.related.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {company.related.map((tag, idx) => (
+                    <span key={idx} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200">
+                      {String(tag).trim()}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {/* 分隔线 */}
               <div className="border-t border-gray-100 mb-6"></div>
 

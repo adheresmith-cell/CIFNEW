@@ -13,6 +13,7 @@ import { fetchMockArticles } from '../data/mockArticles';
 import AskQuestionModal from './AskQuestionModal';
 import AddQAItemModal from './AddQAItemModal';
 import QACardItem from './QACardItem';
+import ChapterWidgetSlot from './ChapterWidgetSlot';
 import documentService from '../../services/documentService';
 import { useQaChapter } from '../../context/QaChapterContext';
 
@@ -331,6 +332,9 @@ const CommonQAPage = () => {
             </div>
           )}
         </div>
+
+        {/* 章节配套工具：「保险」章节显示社保养老金计算器 */}
+        <ChapterWidgetSlot activeChapter={activeChapter} />
 
         {/* 底部说明 */}
         <div className="mt-10 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">

@@ -755,7 +755,7 @@ function SocialSecurityCalculator() {
                   setAccountMode("balance")
                 }
               >
-                直接输入
+                总计
               </button>
 
 
@@ -770,7 +770,7 @@ function SocialSecurityCalculator() {
                   setAccountMode("monthly")
                 }
               >
-                按月缴费
+                按月
               </button>
 
             </div>
