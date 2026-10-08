@@ -11,6 +11,10 @@
       "dir": "./orbitdb-data"
     },
     {
+      "name": "companyRelated",
+      "dir": "./orbitdb-data"
+    },
+    {
       "name": "orbitdt",
       "dir": "./orbitdb-data"
     },

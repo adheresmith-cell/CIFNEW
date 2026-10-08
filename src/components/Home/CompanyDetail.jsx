@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { mockCompanies } from '../data/mockCompanies';
 import ALLArticles from '../Articles/ALLArticles';
 import MarkdownEditor from '../Editor/MarkdownEditor';
+import { fetchCompanyRelated, addCompanyRelated, normalizeList } from '../../services/companyRelatedService';
 
 /**
  * 公司详情组件（支持作为覆盖层显示）
@@ -11,6 +12,24 @@ import MarkdownEditor from '../Editor/MarkdownEditor';
  */
 function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEditing = false, onBackFromEdit }) {
   const company = propCompany || mockCompanies.find(c => c.id === Number(companyId));
+
+  // 关联组织（内置 related ∪ companyRelated 库），支持新增后「追加渲染」
+  const [relatedItems, setRelatedItems] = useState([]);
+  const [isAddingRelated, setIsAddingRelated] = useState(false);
+  const [relatedInput, setRelatedInput] = useState('');
+  const [relatedError, setRelatedError] = useState('');
+  const [savingRelated, setSavingRelated] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!company) return;
+    // 先用内置 related 渲染，再异步叠加 companyRelated 库中的数据
+    setRelatedItems(normalizeList(company.related));
+    fetchCompanyRelated(company).then(list => {
+      if (!cancelled) setRelatedItems(list);
+    });
+    return () => { cancelled = true; };
+  }, [company]);
 
   if (!company) {
     return (
@@ -59,6 +78,24 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEdi
     }
 
     return stars;
+  };
+
+  // 追加一个关联组织：写库成功后更新本地列表（追加渲染）
+  const handleAddRelated = async (e) => {
+    e.preventDefault();
+    if (!relatedInput.trim()) return;
+    setRelatedError('');
+    setSavingRelated(true);
+    try {
+      const next = await addCompanyRelated(company, relatedInput);
+      setRelatedItems(next);
+      setRelatedInput('');
+      setIsAddingRelated(false);
+    } catch (err) {
+      setRelatedError(err.message);
+    } finally {
+      setSavingRelated(false);
+    }
   };
 
   return (
@@ -180,14 +217,54 @@ function CompanyDetail({ company: propCompany, companyId, onClose, onEdit, isEdi
               )}
 
               {/* 关联组织 */}
-              {company.related && company.related.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {company.related.map((tag, idx) => (
-                    <span key={idx} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200">
-                      {String(tag).trim()}
-                    </span>
-                  ))}
-                </div>
+              <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                {relatedItems.map((tag, idx) => (
+                  <span key={idx} className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full border border-blue-200">
+                    {String(tag).trim()}
+                  </span>
+                ))}
+
+                {!isAddingRelated ? (
+                  <button
+                    type="button"
+                    onClick={() => { setIsAddingRelated(true); setRelatedError(''); }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-blue-600 bg-white rounded-full border border-dashed border-blue-300 hover:bg-blue-50 transition-colors"
+                    title="添加关联组织"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    添加
+                  </button>
+                ) : (
+                  <form onSubmit={handleAddRelated} className="inline-flex items-center gap-1">
+                    <input
+                      autoFocus
+                      value={relatedInput}
+                      onChange={(e) => setRelatedInput(e.target.value)}
+                      placeholder="组织名称"
+                      className="px-2.5 py-1 text-xs text-gray-700 border border-blue-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={savingRelated}
+                      className="px-2.5 py-1 text-xs font-medium text-white bg-blue-600 rounded-full hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {savingRelated ? '保存中…' : '确认'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={savingRelated}
+                      onClick={() => { setIsAddingRelated(false); setRelatedInput(''); setRelatedError(''); }}
+                      className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 disabled:opacity-50"
+                    >
+                      取消
+                    </button>
+                  </form>
+                )}
+              </div>
+              {relatedError && (
+                <div className="text-xs text-red-600 mb-4">{relatedError}</div>
               )}
 
               {/* 分隔线 */}
