@@ -2,8 +2,12 @@
  * 公司卡片组件
  * @param {object} company - 公司数据 （包含 stockCode 字段）
  * @param {function} onClick - 点击回调函数
+ * @param {string[]} [related] - 已合并的关联组织（内置 related ∪ companyRelated 库）。
+ *                               由 CompanyList 批量载入后传入；缺省时回退 company.related。
  */
-function CompanyCard({ company, onClick }) {
+import { normalizeList } from '../../services/companyRelatedService';
+
+function CompanyCard({ company, onClick, related }) {
   // 根据名称长度动态计算字号
   const getFontSize = (name) => {
     const len = name?.length || 0;
@@ -14,6 +18,9 @@ function CompanyCard({ company, onClick }) {
   };
 
   const hasLogo = company.logo && typeof company.logo === 'string' && company.logo.trim() !== '';
+
+  // 关联组织：优先使用父级批量载入的合并结果；未传入时回退内置 related（容忍字符串写法）
+  const relatedList = Array.isArray(related) ? related : normalizeList(company.related);
 
   return (
     <div
@@ -87,8 +94,8 @@ function CompanyCard({ company, onClick }) {
                 {company.parent}
               </span>
             )}
-            {company.related && company.related.map((rel, idx) => (
-              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200">
+            {relatedList.map((rel, idx) => (
+              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-200" title={`关联组织 ${rel}`}>
                 <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>

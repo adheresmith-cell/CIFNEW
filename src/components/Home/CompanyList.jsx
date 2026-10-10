@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import CompanyCard from './CompanyCard';
 import AddCompanyModal from './AddCompanyModal';
+import { fetchAllCompanyRelated, mergeRelated, companyKeyOf } from '../../services/companyRelatedService';
 
 const PAGE_SIZE = 100;
 
@@ -123,6 +124,17 @@ const compareCompanies = (a, b) => {
 function CompanyList({ companies, onCompanyClick, onAddCompany, currentPage, onPageChange }) {
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // 从 companyRelated 库批量载入「公司 → 关联组织」（1 次请求），供卡片渲染
+  const [relatedMap, setRelatedMap] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllCompanyRelated().then((map) => {
+      if (!cancelled) setRelatedMap(map);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   // 按 id 升序排序（OrbitDB 新增公司追加在末尾，见 compareCompanies）
   const sortedCompanies = [...companies].sort(compareCompanies);
   const totalPages = Math.ceil(sortedCompanies.length / PAGE_SIZE);
@@ -219,6 +231,7 @@ function CompanyList({ companies, onCompanyClick, onAddCompany, currentPage, onP
         <CompanyCard
           key={company.id}
           company={company}
+          related={mergeRelated(company.related, relatedMap[companyKeyOf(company)])}
           onClick={onCompanyClick}
         />
       ))}

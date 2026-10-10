@@ -80,6 +80,30 @@ export async function fetchCompanyRelated(company) {
 }
 
 /**
+ * 批量读取所有公司的关联组织（一次请求，供列表/卡片渲染使用）。
+ *
+ * `handleDBAll` 返回裸数组（见 orbit-server/handlers.go），
+ * 解析失败（库未配置 / 后端未启动）只告警，返回空表 → 调用方回退内置 related。
+ *
+ * @returns {Promise<Object.<string, string[]>>} { [companyKey]: related[] }
+ */
+export async function fetchAllCompanyRelated() {
+  try {
+    const rows = await backendClient.dbNamedAll(DB);
+    const map = {};
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const key = str(row?.companyId ?? row?._id).trim();
+      if (!key) continue;
+      map[key] = normalizeList(row?.related);
+    }
+    return map;
+  } catch (err) {
+    console.warn('⚠️ 读取 companyRelated 列表失败，仅显示内置关联组织:', err.message);
+    return {};
+  }
+}
+
+/**
  * 追加一个关联组织，返回最新完整列表（写库失败会 throw）
  * @param {Object} company - 公司对象
  * @param {string} name - 新关联组织名称
@@ -109,6 +133,7 @@ export async function addCompanyRelated(company, name) {
 
 const companyRelatedService = {
   fetchCompanyRelated,
+  fetchAllCompanyRelated,
   addCompanyRelated,
   mergeRelated,
   normalizeList,
