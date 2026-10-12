@@ -22,7 +22,7 @@ import { mockCompanies as initialCompanies } from './components/data/transformed
 import CytoscapeTree from './components/Editor/CytoscapeTree';
 // import pubsubAggregator from './services/pubsubAggregator';
 import backendClient from './services/backendClient';
-import { syncMonthlyToIndexedDB } from './services/orbitUpdateService';
+import { syncAllMonthsToIndexedDB } from './services/orbitUpdateService';
 import { fetchOrbitCompanies, mergeCompanies } from './services/orbitCompanyService';
 import MonthlyDbTest from './components/Test/MonthlyDbTest';
 import OrbitDbDocTest from './components/Test/OrbitDbDocTest';
@@ -91,8 +91,9 @@ const AppRoutes = () => {
   useEffect(() => {
     loadAndStoreData(); // 加载爬取的上市公司json数据
 
-    // 自动同步当月 OrbitDB 数据到 IndexedDB
-    syncMonthlyToIndexedDB().catch(err => {
+    // 自动同步 orbit-config.json 中所有月份 OrbitDB 数据到 IndexedDB
+    // （月份来源：后端 /api/dbs 返回的 YYYY-MM 月度库名）
+    syncAllMonthsToIndexedDB().catch(err => {
       console.error('OrbitDB 月度同步失败:', err);
     });
 

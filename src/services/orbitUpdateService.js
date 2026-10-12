@@ -19,20 +19,15 @@ function getCurrentMonth() {
 }
 
 /**
- * 同步当月 OrbitDB 数据到 IndexedDB
+ * 同步指定单个月份的 OrbitDB 数据到 IndexedDB
  *
- * 遍历当月所有文档，若 IndexedDB 中尚不存在则写入。
- * 适合在 App 启动时自动调用。
+ * 遍历该月所有文档，若 IndexedDB 中尚不存在则写入。
  *
- * @param {Object} [options]
- * @param {string} [options.month] - 指定月份，不传则使用当月
- * @param {boolean} [options.force] - 是否强制覆盖已存在的记录
+ * @param {string} month - 月份，格式 YYYY-MM
+ * @param {boolean} [force] - 是否强制覆盖已存在的记录
  * @returns {Promise<{synced: number, skipped: number, errors: number}>}
  */
-export async function syncMonthlyToIndexedDB(options = {}) {
-  const month = options.month || getCurrentMonth();
-  const force = options.force || false;
-
+export async function syncOneMonth(month, force = false) {
   console.log(`📡 同步 OrbitDB 月度数据: ${month}`);
 
   let synced = 0;
@@ -104,4 +99,67 @@ export async function syncMonthlyToIndexedDB(options = {}) {
   return { synced, skipped, errors };
 }
 
-export default { syncMonthlyToIndexedDB };
+/**
+ * 同步当月 OrbitDB 数据到 IndexedDB（保持向后兼容）
+ *
+ * @param {Object} [options]
+ * @param {string} [options.month] - 指定月份，不传则使用当月
+ * @param {boolean} [options.force] - 是否强制覆盖已存在的记录
+ * @returns {Promise<{synced: number, skipped: number, errors: number}>}
+ */
+export async function syncMonthlyToIndexedDB(options = {}) {
+  const month = options.month || getCurrentMonth();
+  const force = options.force || false;
+  return syncOneMonth(month, force);
+}
+
+/**
+ * 同步 orbit-config.json 中所有月度库到 IndexedDB
+ *
+ * 月份来源：后端 /api/dbs 返回的库名中匹配 YYYY-MM 的部分
+ * （即 orbit-config.json 的 "dbs" 中登记的所有月份）。
+ * 适合在 App 启动时自动调用，一次性载入全部历史月份数据。
+ *
+ * 单个月份失败（如后端 404、网络抖动）不会中断整体同步，
+ * 已同步过的 CID 会通过 IndexedDB 命中检查被跳过，重复启动无额外下载。
+ *
+ * @param {Object} [options]
+ * @param {boolean} [options.force] - 是否强制覆盖已存在的记录
+ * @returns {Promise<{months: string[], synced: number, skipped: number, errors: number}>}
+ */
+export async function syncAllMonthsToIndexedDB(options = {}) {
+  const force = options.force || false;
+  const total = { months: [], synced: 0, skipped: 0, errors: 0 };
+
+  let months = [];
+  try {
+    months = await backendClient.fetchMonthDBs();
+  } catch (err) {
+    console.error('❌ 获取月度数据库列表失败:', err.message);
+    total.errors++;
+    return total;
+  }
+
+  if (months.length === 0) {
+    console.log('📭 未在 orbit-config.json 中找到任何 YYYY-MM 月度数据库');
+    return total;
+  }
+
+  total.months = months;
+  console.log(`📡 开始同步全部月度数据，共 ${months.length} 个月:`, months);
+
+  // 串行同步，避免并发请求打爆 Kubo / 后端
+  for (const month of months) {
+    const r = await syncOneMonth(month, force);
+    total.synced += r.synced;
+    total.skipped += r.skipped;
+    total.errors += r.errors;
+  }
+
+  console.log(
+    `✅ 全部月度同步完成: ${months.length} 个月, 新增 ${total.synced}, 跳过 ${total.skipped}, 错误 ${total.errors}`
+  );
+  return total;
+}
+
+export default { syncMonthlyToIndexedDB, syncOneMonth, syncAllMonthsToIndexedDB };

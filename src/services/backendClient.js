@@ -209,6 +209,23 @@ class BackendClient {
   }
 
   /**
+   * 获取服务器 orbit-config.json 中所有按月组织的数据库名（YYYY-MM），已排序
+   *
+   * 后端 /api/dbs 返回的是 Go map 的键（无序，且包含 users/companies 等非月份库），
+   * 这里过滤出形如 YYYY-MM 的月度库并排序，供启动时批量同步使用。
+   *
+   * @returns {Promise<string[]>} 形如 ['2026-07', '2026-08', '2026-09']
+   */
+  async fetchMonthDBs() {
+    // 仅接受合法的 YYYY-MM（月份 01~12），排除 2026-13 这类非法值
+    const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/
+    const names = await this.fetchDBs()
+    return (Array.isArray(names) ? names : [])
+      .filter((n) => MONTH_RE.test(n))
+      .sort()
+  }
+
+  /**
    * 写入文档到指定数据库
    * @param {string} name - 数据库名称（如 users, orbitdt）
    * @param {Object} doc - 文档对象
