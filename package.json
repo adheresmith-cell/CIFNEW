@@ -54,7 +54,12 @@
     "start:server": "node helia-server.mjs",
     "build:backend": "cd ./orbit-server && go build -o orbit-server .",
     "backend": "cd ./orbit-server/ && ./orbit-server",
-    "ipfs": "ipfs daemon --enable-pubsub-experiment"
+    "ipfs": "ipfs daemon --enable-pubsub-experiment",
+    "build:backend:win": "cd ./orbit-server && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags=\"-s -w\" -o orbit-server.exe .",
+    "backend:win": "cd orbit-server && orbit-server.exe orbit-config.json",
+    "dist:backend:win": "cd ./orbit-server && rm -rf dist-windows && mkdir -p dist-windows && cp orbit-server.exe orbit-config.json run-windows.bat dist-windows/ && cp -r orbitdb-data dist-windows/ 2>/dev/null; echo \"dist-windows/ 打包完成\"",
+    "start:win": "run.bat",
+    "start:linux": "./run.sh"
   },
   "eslintConfig": {
     "extends": [

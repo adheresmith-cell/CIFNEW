@@ -5,7 +5,7 @@ gnome-terminal --title="ipfs" -- bash -c "
     exec bash
 "
 
-sleep 5
+sleep 15
 
 gnome-terminal --title="backend" -- bash -c "
     npm run backend

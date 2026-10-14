@@ -31,6 +31,10 @@
       "dir": "./orbitdb-data"
     },
     {
+      "name": "CommonQA",
+      "dir": "./orbitdb-data"
+    },
+    {
       "name": "images",
       "dir": "./orbitdb-data"
     }
