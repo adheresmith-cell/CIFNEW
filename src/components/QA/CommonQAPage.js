@@ -13,7 +13,7 @@ import { fetchMockArticles } from '../data/mockArticles';
 import AskQuestionModal from './AskQuestionModal';
 import AddQAItemModal from './AddQAItemModal';
 import QACardItem from './QACardItem';
-import ChapterWidgetSlot from './ChapterWidgetSlot';
+import ChapterWidgetSlot, { ChapterWidgetToggle } from './ChapterWidgetSlot';
 import documentService from '../../services/documentService';
 import { useQaChapter } from '../../context/QaChapterContext';
 
@@ -28,6 +28,7 @@ const CommonQAPage = () => {
   const skipChapterSyncRef = useRef(false); // 搜索提交会把章节归零，用它跳过随之而来的清空
   const [askModalOpen, setAskModalOpen] = useState(false); // “提问题”弹窗开关
   const [addItemModal, setAddItemModal] = useState(null); // 评论/建议弹窗：{ mode: 'ans-com'|'ans-sug', article }
+  const [chapterWidgetView, setChapterWidgetView] = useState('qa'); // 「保险」章节配套工具视图：'qa' | 'calculator'
 
   // 点击下拉菜单外部时自动关闭
   useEffect(() => {
@@ -42,6 +43,8 @@ const CommonQAPage = () => {
 
   // 标题栏点击章节胶囊时清除页面内的搜索态（搜索与章节互斥）；重复点击同一胶囊也会触发（version 变化）
   useEffect(() => {
+    // 章节/版本变化即把「保险」配套工具复位到问答视图（放在提前 return 之前，搜索归零也生效）
+    setChapterWidgetView('qa');
     if (skipChapterSyncRef.current) {
       skipChapterSyncRef.current = false;
       return;
@@ -265,7 +268,7 @@ const CommonQAPage = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* 分区说明 */}
         {!searchKeyword.trim() && (
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             <h2 className="text-lg font-bold text-gray-800">
               {activeChapter === 'all'
                 ? '📚 全部问答'
@@ -274,6 +277,13 @@ const CommonQAPage = () => {
             <span className="text-sm text-gray-400">
               — 共 {currentQAs.length} 个问答
             </span>
+            {/* 章节配套工具的视图切换：与「分区说明」并列同行（仅「保险」章节） */}
+            {activeChapter === 'insurance' && (
+              <ChapterWidgetToggle
+                value={chapterWidgetView}
+                onChange={setChapterWidgetView}
+              />
+            )}
           </div>
         )}
 
@@ -296,45 +306,45 @@ const CommonQAPage = () => {
           </div>
         )}
 
-        {/* 问答列表 */}
-        <div className="space-y-4">
-          {qaLoading ? (
-            <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-              <div className="inline-block w-8 h-8 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mb-3" />
-              <p className="text-gray-400">正在加载问答...</p>
-            </div>
-          ) : currentQAs.length > 0 ? (
-            currentQAs.map((qa) => {
-              // 通过 cid 配对回答与建议（静态与动态问答统一处理）
-              const { answers, suggestions } = getRelatedForQuestion(qa, {
-                answers: answerPool,
-                suggestions: suggestionPool,
-              });
-              return (
-                <QACardItem
-                  key={qa.id || qa.cid}
-                  article={qa}
-                  answers={answers}
-                  suggestions={suggestions}
-                  onAddComment={handleAddComment}
-                  onAddSuggestion={handleAddSuggestion}
-                />
-              );
-            })
-          ) : (
-            <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-              <div className="text-4xl mb-3">🔍</div>
-              <p className="text-gray-500">
-                {searchKeyword.trim()
-                  ? '未找到相关问答，换个关键词试试'
-                  : '该分类下暂无问答，试试其他分类'}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* 章节配套工具：「保险」章节显示社保养老金计算器 */}
-        <ChapterWidgetSlot activeChapter={activeChapter} />
+        {/* 章节配套工具：内容插槽（受控），「保险」章节按视图显示问答或社保养老金计算器 */}
+        <ChapterWidgetSlot activeChapter={activeChapter} view={chapterWidgetView}>
+          {/* 问答列表 */}
+          <div className="space-y-4" data-testid="qa-list">
+            {qaLoading ? (
+              <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+                <div className="inline-block w-8 h-8 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mb-3" />
+                <p className="text-gray-400">正在加载问答...</p>
+              </div>
+            ) : currentQAs.length > 0 ? (
+              currentQAs.map((qa) => {
+                // 通过 cid 配对回答与建议（静态与动态问答统一处理）
+                const { answers, suggestions } = getRelatedForQuestion(qa, {
+                  answers: answerPool,
+                  suggestions: suggestionPool,
+                });
+                return (
+                  <QACardItem
+                    key={qa.id || qa.cid}
+                    article={qa}
+                    answers={answers}
+                    suggestions={suggestions}
+                    onAddComment={handleAddComment}
+                    onAddSuggestion={handleAddSuggestion}
+                  />
+                );
+              })
+            ) : (
+              <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+                <div className="text-4xl mb-3">🔍</div>
+                <p className="text-gray-500">
+                  {searchKeyword.trim()
+                    ? '未找到相关问答，换个关键词试试'
+                    : '该分类下暂无问答，试试其他分类'}
+                </p>
+              </div>
+            )}
+          </div>
+        </ChapterWidgetSlot>
 
         {/* 底部说明 */}
         <div className="mt-10 bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
