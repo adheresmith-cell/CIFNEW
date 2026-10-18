@@ -489,6 +489,7 @@ const MarkdownEditor = ({ company }) => {
       {/* 图片上传弹窗 */}
       {showImageUpload && (
         <ImageUploader
+          companyId={companyId || company?.id || ''}
           onUploadSuccess={(cid) => {
             const imageMarkdown = `![图片](http://localhost:3456/api/image/${cid})`;
             setContent((prev) => (prev ? prev + '\n\n' + imageMarkdown : imageMarkdown));

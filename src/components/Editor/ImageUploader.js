@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
 import ipfsService from '../../services/ipfsDB';
 
-const ImageUploader = ({ onUploadSuccess, onClose }) => {
+const ImageUploader = ({ onUploadSuccess, onClose, companyId = '' }) => {
   const [preview, setPreview] = useState(null);
   const [base64, setBase64] = useState('');
   const [mimeType, setMimeType] = useState('');
+  const [imageType, setImageType] = useState('00'); // 00 未定义 / 01 环境 / 02 数据
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef(null);
@@ -39,7 +40,10 @@ const ImageUploader = ({ onUploadSuccess, onClose }) => {
     setError('');
 
     try {
-      const result = await ipfsService.uploadImage(base64, mimeType);
+      const result = await ipfsService.uploadImage(base64, mimeType, {
+        companyId: companyId || '',
+        imageType: imageType || '00',
+      });
       onUploadSuccess(result.cid);
     } catch (err) {
       setError(`上传失败: ${err.message}`);
@@ -86,6 +90,20 @@ const ImageUploader = ({ onUploadSuccess, onClose }) => {
             />
           </div>
         )}
+
+        {/* 图像类型 */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">图像类型</label>
+          <select
+            value={imageType}
+            onChange={(e) => setImageType(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="00">00 未定义类型</option>
+            <option value="01">01 环境类型</option>
+            <option value="02">02 数据类型</option>
+          </select>
+        </div>
 
         {/* 错误信息 */}
         {error && (

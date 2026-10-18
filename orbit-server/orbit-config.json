@@ -31,6 +31,18 @@
       "dir": "./orbitdb-data"
     },
     {
+      "name": "2026-10",
+      "dir": "./orbitdb-data"
+    },
+    {
+      "name": "2026-11",
+      "dir": "./orbitdb-data"
+    },
+    {
+      "name": "2026-12",
+      "dir": "./orbitdb-data"
+    },
+    {
       "name": "CommonQA",
       "dir": "./orbitdb-data"
     },

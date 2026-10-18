@@ -290,6 +290,11 @@ class BackendClient {
 
   /**
    * 上传图片到 IPFS
+   *
+   * @deprecated 已弃用。图片上传请改用 ipfsService.uploadImage()
+   * （前端直连 Kubo 上传，并通过 backendClient.dbNamedPut('images', ...) 写元数据）。
+   * 本方法对应的后端 POST /api/upload-image 目前无调用方，仅保留以兼容旧代码。
+   *
    * @param {string} data - base64 编码的图片数据
    * @param {string} mimeType - MIME 类型，如 image/png
    * @returns {Promise<{cid: string}>}
