@@ -136,7 +136,7 @@ function CompanyList({ companies, onCompanyClick, onAddCompany, currentPage, onP
   }, []);
 
   // 按 id 升序排序（OrbitDB 新增公司追加在末尾，见 compareCompanies）
-  const sortedCompanies = [...companies].sort(compareCompanies);
+  const sortedCompanies = companies;//[...companies].sort(compareCompanies); 取消公司列表升序排列
   const totalPages = Math.ceil(sortedCompanies.length / PAGE_SIZE);
 
   // 来自 OrbitDB companies 数据库的新增公司数量
